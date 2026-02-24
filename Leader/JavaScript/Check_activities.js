@@ -1,14 +1,13 @@
 /* ====== CONFIG ====== */
-const SUPABASE_URL = 'https://pdqzkejlefozxquptoco.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkcXprZWpsZWZvenhxdXB0b2NvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIzNDIyODAsImV4cCI6MjA3NzkxODI4MH0.EojnxNcGPj7eGlf7FAJOgMuEXIW54I2NQwB_L2Wj9DU';
-const supabaseCilent = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const SUPABASE_URL = 'https://dxfwnsfdgnazzwkbvjmz.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_1-4QXvDbZ5F3a7TcWN6rVA_VkQHcXtl';
 
 const params = new URLSearchParams(window.location.search);
 const activityId = params.get('activityId');
 
 /* ====== HELPERS ====== */
 const $ = sel => document.querySelector(sel);
-let allMajors = []; // เก็บข้อมูลสาขาที่โหลดมาทั้งหมด
+let allMajors = []; // เก็บข้อมูลสาขาที่โหลดมาทั้งหมดWWWWWA
 let allClassesData = []; // เก็บข้อมูล Class ทั้งหมด
 let globalIsoDate;
 let globalSemester;
