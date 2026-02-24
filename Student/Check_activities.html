@@ -129,11 +129,13 @@
                 <nav>
                     <a href="Home.html"><i
                             class="fas fa-home"></i> <span>หน้าหลัก</span></a>
-                    <a href="Activity_list.html" class="active" ><i
-                            class="fas fa-list-alt" ></i> <span>รายการกิจกรรม</span></a>
+                    <a href="Activity_list.html" class="active"><i
+                            class="fas fa-list-alt" class="active"></i>
+                        <span>รายการกิจกรรม</span></a>
                     <a href="Term_results_summary.html"><i
-                            class="fas fa-poll"></i> <span>สรุปผลกิจกรรม</span></a>
-                   <a href="../index.html" class="logout"><i
+                            class="fas fa-poll"></i>
+                        <span>สรุปผลกิจกรรม</span></a>
+                    <a href="../index.html" class="logout"><i
                             class="fas fa-sign-out-alt"></i>
                         <span>ลงชื่อเข้าใช้ออก</span></a>
                 </nav>
@@ -156,7 +158,6 @@
                             style="margin: 0; font-size: 28px;">ตรวจสอบกิจกรรม</h2>
                     </div>
 
-                   
                 </div>
 
                 <form id="createActivityForm">
@@ -209,11 +210,10 @@
                             <label for="activityType"
                                 class="required">ประเภทกิจกรรม</label>
                             <select id="activityType" name="activityType"
-                                disabled required>
-                                <option value="activity">กิจกรรมทั่วไป
-                                    (แผนก/วิทยาลัย)</option>
-                                <option value="flag_ceremony">กิจกรรมหน้าเสาธง
-                                    (เช็คชื่อเข้าแถว)</option>
+                                required disabled>
+                                <option value>เลือกประเภทกิจกรรม</option>
+                                <option value="department">กิจกรรมแผนก</option>
+                                <option value="special">กิจกรรมพิเศษ</option>
                             </select>
                         </div>
                     </div>
@@ -233,16 +233,20 @@
                             <label for="department">สาขา</label>
                             <div class="input-icon-group">
                                 <select id="department" name="department"
-                                    disabled> <option value>เลือกสาขา</option>
-                                    <option value="1">ไฟฟ้า</option>
-                                    <option value="2">ช่างยนต์</option>
+                                    disabled>
+                                    <option value>เลือกสาขา</option>
+                                    <option value="1">เทคโนโลยีคอมพิวเตอร์
+                                        (ปวส.)</option>
+                                    <option value="2">เทคโนโลยีคอมพิวเตอร์
+                                        (ปวช.)</option>
                                 </select>
                             </div>
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="semester" class="required">ภาคเรียน</label>
+                            <label for="semester"
+                                class="required">ภาคเรียน</label>
                             <select id="semester" name="semester" required
                                 disabled>
                                 <option value>เลือกภาคเรียน</option>
@@ -251,10 +255,10 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="studentYear" class="required">ชั้นปี</label>
+                            <label for="studentYear" class="required">ปี</label>
                             <select id="studentYear" name="studentYear" required
                                 disabled>
-                                <option value>เลือกชั้นปี</option>
+                                <option value>เลือกปี</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -265,18 +269,7 @@
                             </select>
                         </div>
                     </div>
-                    <div class="form-row">
-                        <div class="form-group"
-                            style="flex: unset; width: 300px; flex-direction: row; align-items: center;">
-                            <label for="recurringDays"
-                                style="width: 100px; font-weight: normal; margin-right: 10px;">จัดขึ้นทุกๆ</label>
-                            <input type="number" id="recurringDays"
-                                name="recurringDays" value="0"
-                                style="width: 80px;" disabled>
-                            <span
-                                style="font-weight: bold; margin-left: 10px;">วัน</span>
-                        </div>
-                    </div>
+
                     <div>
                         <table class="attendance-table">
                             <thead>
@@ -300,10 +293,13 @@
                         </table>
                     </div>
 
-                   
-
                 </form>
             </div>
+        </div>
+        <div id="loadingOverlay" class="loading-overlay">
+            <div class="spinner"></div>
+            <p style="margin-top: 15px; font-weight: bold;">กำลังบันทึกข้อมูล
+                กรุณารอสักครู่...</p>
         </div>
         <script>
         const toggleBtn = document.getElementById('sidebarToggle');

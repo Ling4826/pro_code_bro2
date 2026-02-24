@@ -1,77 +1,156 @@
-// Activity_list.js
-
 // เปลี่ยน YOUR_SUPABASE_URL และ YOUR_SUPABASE_ANON_KEY ด้วยค่าจริงของคุณ
 const SUPABASE_URL = 'https://dxfwnsfdgnazzwkbvjmz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_1-4QXvDbZ5F3a7TcWN6rVA_VkQHcXtl';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// 💡 ลบตัวแปร Filter และ Modal ที่ไม่ใช้
+let departmentSelect;
+let levelSelect;
+let studentYearSelect;
+let classNumberSelect;
+let activityNameInput;
+
+let allMajors = [];
+let allClasses = [];
 let cachedActivities = [];
-let leaderClassId = null; // 💡 เก็บ Class ID ของหัวหน้าห้อง
+let activityIdToDelete = null;
 
 // ==========================================================
 // === 1. LOADERS / POPULATORS ===
-// 💡 ลบฟังก์ชัน populateFilters(), updateYearFilter(), updateMajorFilter(), updateClassNumberFilter() ออกทั้งหมด
 // ==========================================================
 
-// ==========================================================
-// === 2. FETCH & RENDER ACTIVITY (ปรับปรุงการกรอง) ===
-// ==========================================================
+async function populateFilters() {
+    console.log('Fetching initial data for filters...');
 
-// 💡 (ฟังก์ชันใหม่) ดึง Class ID ของหัวหน้าห้องจาก Ref ID
-async function getLeaderClassId(leaderRefId) {
-    if (!leaderRefId) return null;
-
-    const { data: studentData, error: studentError } = await supabaseClient
-        .from('student')
-        .select('class_id')
-        .eq('id', leaderRefId)
-        .eq('role', 'Leader')
-        .single();
-
-    if (studentError) {
-        console.error('Error fetching leader student data:', studentError.message);
-        return null;
+    const { data: majors, error: majorError } = await supabaseClient.from('major').select('id, name, level');
+    if (majorError) { 
+        console.error('Error fetching majors:', majorError.message); 
+        return; 
     }
-    return studentData ? studentData.class_id : null;
+    allMajors = majors;
+
+    const { data: classes, error: classError } = await supabaseClient.from('class').select('major_id, year, class_number');
+    if (classError) { 
+        console.error('Error fetching classes:', classError.message); 
+        return; 
+    }
+    allClasses = classes;
+
+    const uniqueLevels = [...new Set(majors.map(m => m.level?.trim()).filter(Boolean))];
+    levelSelect.innerHTML = '<option value="">เลือกระดับ</option>';
+    uniqueLevels.forEach(level => {
+        const option = document.createElement('option');
+        option.value = level;
+        option.textContent = level;
+        levelSelect.appendChild(option);
+    });
+
+    updateMajorFilter();
+    updateYearFilter();
+    updateClassNumberFilter();
 }
-// ... (ส่วนหัวโค้ด) ...
+
+function updateYearFilter() {
+    const selectedLevel = levelSelect.value;
+    const previousYear = studentYearSelect.value;
+    studentYearSelect.innerHTML = '<option value="">เลือกชั้นปี</option>';
+
+    if (!selectedLevel || !allMajors.length || !allClasses.length) return;
+
+    const majorIds = allMajors
+        .filter(m => m.level.trim() === selectedLevel.trim())
+        .map(m => m.id);
+
+    const uniqueYears = [...new Set(
+        allClasses
+            .filter(c => majorIds.includes(c.major_id))
+            .map(c => c.year)
+    )].sort((a, b) => a - b);
+
+    uniqueYears.forEach(year => {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = `ปี ${year}`;
+        if (year.toString() === previousYear) {
+            option.selected = true;
+        }
+        studentYearSelect.appendChild(option);
+    });
+}
+
+function updateMajorFilter() {
+    const selectedLevel = levelSelect.value;
+    const previousMajor = departmentSelect.value;
+    
+    departmentSelect.innerHTML = '<option value="">เลือกสาขา</option>';
+    if (!selectedLevel) return;
+
+    const filteredMajors = allMajors.filter(m => 
+        m.level && m.level.trim() === selectedLevel.trim()
+    );
+    if (filteredMajors.length === 0) return;
+
+    const uniqueMajorNames = [...new Set(filteredMajors.map(m => m.name))];
+
+    uniqueMajorNames.forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        if (name === previousMajor) {
+            option.selected = true;
+        }
+        departmentSelect.appendChild(option);
+    });
+}
+
+function updateClassNumberFilter() {
+    const selectedYear = studentYearSelect.value;
+    const selectedMajorName = departmentSelect.value;
+    const selectedLevel = levelSelect.value;
+    const previousClassNumber = classNumberSelect.value;
+
+    classNumberSelect.innerHTML = '<option value="">เลือกห้อง</option>';
+
+    const major = allMajors.find(m => m.name === selectedMajorName && m.level?.trim() === selectedLevel?.trim());
+    const targetMajorId = major ? major.id : null;
+
+    if (targetMajorId && selectedYear) {
+        const filteredClasses = allClasses.filter(c => 
+            c.major_id === targetMajorId && 
+            c.year.toString() === selectedYear
+        );
+
+        const uniqueClassNumbers = [...new Set(filteredClasses.map(c => c.class_number))]
+            .sort((a, b) => a - b);
+
+        uniqueClassNumbers.forEach(number => {
+            const option = document.createElement('option');
+            option.value = number;
+            option.textContent = `ห้อง ${number}`;
+            if (number.toString() === previousClassNumber) {
+                option.selected = true;
+            }
+            classNumberSelect.appendChild(option);
+        });
+    }
+}
+
+// ==========================================================
+// === 2. FETCH & RENDER ACTIVITY ===
+// ==========================================================
+
+// ==========================================================
+// === 2. FETCH & RENDER ACTIVITY (ฉบับกรองตั้งแต่แรก) ===
+// ==========================================================
 
 async function fetchActivities() {
     const container = document.getElementById('activityCardContainer');
     container.innerHTML = 'กำลังโหลดกิจกรรม...';
-    
-    // ดึง Ref ID ของหัวหน้าห้อง และหา Class ID
-    const refId = sessionStorage.getItem('ref_id');
-    leaderClassId = await getLeaderClassId(refId); 
-    
-    if (!leaderClassId) {
-        // อนุญาตให้โหลดกิจกรรมรวมได้แม้ไม่พบ Class ID (แต่จะไม่เห็นกิจกรรมห้องตัวเอง)
-        console.warn('Class ID for the leader not found. Only loading non-class-specific activities.');
-    }
 
-    // 💡 (แก้ไข) ดึงกิจกรรมทั้งหมดที่ไม่ได้ถูกลบ หรือดึงกิจกรรมที่มี class_id เป็นของห้องนี้ หรือเป็น null
-    // เนื่องจาก Supabase RLS จะจัดการการอนุญาตการเข้าถึง เราจะเน้นที่การดึงข้อมูลที่จำเป็น
+    // 💡 1. ตรวจสอบ Role ของผู้ใช้งานปัจจุบัน
+    const userRole = sessionStorage.getItem('user_role')?.toLowerCase();
+    const refId = sessionStorage.getItem('ref_id'); // รหัสนักศึกษาคนที่ล็อกอิน
 
-    // **วิธีที่ 1: ดึงกิจกรรมที่ตรงกับ Class ID หรือกิจกรรมรวม**
-    // เนื่องจาก Supabase ไม่รองรับ `or` ใน `.select()` โดยตรงกับการกรอง JOIN (แบบ RLS), 
-    // เราจะใช้ `.or()` ที่ระดับ Query แทน
-    
-   // ... (ในฟังก์ชัน fetchActivities) ...
-
-   const { data: activityChecks, error: checkError } = await supabaseClient
-        .from('activity_check')
-        .select('activity_id')
-        .eq('student_id', refId); // refId คือ student_id ของผู้ใช้คนปัจจุบัน
-
-    if (checkError) {
-        // จัดการ error
-        return;
-    }
-
-    const activityIds = activityChecks.map(c => c.activity_id);
-
-    // 2. ดึงรายละเอียดกิจกรรมโดยใช้ ID ที่ได้
+    // 💡 2. สร้าง Query หลักสำหรับดึงข้อมูลกิจกรรม
     let query = supabaseClient
         .from('activity')
         .select(`
@@ -79,52 +158,70 @@ async function fetchActivities() {
             name,
             start_time,
             end_time,
-            is_recurring,
-            activity_type, 
+            major_id,
             class:class_id (
                 id,
                 class_number,
-                year,
-                major:major_id (id, name, level)
+                year
             )
         `)
-        // 🔥 ใช้ .in() เพื่อรวมกิจกรรมทั้งหมดที่นักเรียนถูกเช็คชื่อ
-        .in('id', activityIds) 
         .order('start_time', { ascending: true });
 
-    
+    // 💡 3. 🔥 ถ้าเป็น "นักเรียน" หรือ "หัวหน้าห้อง" ให้กรองเฉพาะกิจกรรมของตัวเอง 🔥
+    if (userRole === 'student' || userRole === 'leader') {
+        // ไปหาว่านักเรียนคนนี้มีรายชื่อต้องเข้าร่วมกิจกรรม ID อะไรบ้าง
+        const { data: myChecks, error: checkErr } = await supabaseClient
+            .from('activity_check')
+            .select('activity_id')
+            .eq('student_id', refId);
+
+        if (checkErr) {
+            console.error("Error fetching activity checks:", checkErr);
+            container.innerHTML = '<p>เกิดข้อผิดพลาดในการตรวจสอบสิทธิ์</p>';
+            return;
+        }
+
+        // ถ้านักเรียนคนนี้ยังไม่มีกิจกรรมให้เข้าร่วมเลย
+        if (!myChecks || myChecks.length === 0) {
+            container.innerHTML = '<p>ไม่มีกิจกรรมสำหรับห้องเรียนของคุณ</p>';
+            cachedActivities = [];
+            return;
+        }
+
+        // แกะเอาเฉพาะ ID กิจกรรมมารวมเป็น Array แล้วสั่ง Query ให้ดึงมาแค่นั้น
+        const myActivityIds = [...new Set(myChecks.map(c => c.activity_id))];
+        query = query.in('id', myActivityIds);
+    }
+
+    // 💡 4. เริ่มดึงข้อมูลกิจกรรมตามเงื่อนไข
     const { data: activities, error } = await query;
-    // 💡 ลบ `.eq('class_id', leaderClassId)` ออก 
 
     if (error) {
-// ... (ส่วนแสดง error) ...
         console.error('Error fetching activities:', error.message);
         container.innerHTML = `<p>ไม่สามารถดึงรายการกิจกรรมได้ (ข้อผิดพลาด: ${error.message})</p>`;
         return;
     }
 
     cachedActivities = activities;
-    initFilters();
-    updateFilters(); // แสดงผลครั้งแรกด้วย Filter (ซึ่งเริ่มต้นเป็น 'ทุก...')
+    
+    // ส่งไปวาดการ์ดหน้าจอ
     RenderActivityCards(activities, container);
 }
 
-// ... (ส่วนที่เหลือของโค้ดคงเดิม) ...
 function RenderActivityCards(activities, container) {
     container.innerHTML = '';
 
-// ... (ส่วน if (activities.length === 0) ยังคงเดิม) ...
+    if (activities.length === 0) {
+        container.innerHTML = '<p>ไม่พบกิจกรรมที่ถูกบันทึกไว้</p>';
+        return;
+    }
     
     const DEFAULT_MAJOR = 'ทุกสาขา';
     const DEFAULT_LEVEL = 'ทุกระดับ';
     const DEFAULT_YEAR = 'ทุกปี';
     const DEFAULT_CLASS_NUM = 'ทุกห้อง';
-    
-    // 💡 เพิ่มคำว่า "กิจกรรมรวม" เพื่อให้ชัดเจน
-    const ALL_CLASSES = 'ทุกชั้นเรียน'; 
 
     activities.forEach(activity => {
-// ... (การคำนวณ date, startTime, endTime ยังคงเดิม) ...
         const date = new Date(activity.start_time).toLocaleDateString('th-TH', { 
             day: '2-digit', 
             month: '2-digit', 
@@ -132,176 +229,303 @@ function RenderActivityCards(activities, container) {
         }).replace(/\//g, '/');
         
         const startTime = new Date(activity.start_time).toLocaleTimeString('th-TH', { 
-            hour: '2-digit', 
-            minute: '2-digit', 
-            timeZone: 'Asia/Bangkok' 
+            hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' 
         });
         
         const endTime = new Date(activity.end_time).toLocaleTimeString('th-TH', { 
-            hour: '2-digit', 
-            minute: '2-digit', 
-            timeZone: 'Asia/Bangkok' 
+            hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' 
         });
         
+        // 💡 ค้นหาสาขาและระดับจาก major_id โดยตรง
+        const majorData = allMajors.find(m => m.id == activity.major_id);
+        const departmentName = majorData ? majorData.name : DEFAULT_MAJOR;
+        const departmentLevel = majorData ? majorData.level : DEFAULT_LEVEL;
+
         const classData = activity.class;
-        const majorData = classData?.major;
+        const classYear = classData?.year || DEFAULT_YEAR;
+        const classNumber = classData?.class_number || DEFAULT_CLASS_NUM;
         
-        // 💡 ปรับปรุงการกำหนดค่าเมื่อ classData เป็น null (กิจกรรมรวม)
-        let classDetailText;
-        if (classData && classData.id) {
-            classDetailText = `ปี ${classData.year || DEFAULT_YEAR} ห้อง ${classData.class_number || DEFAULT_CLASS_NUM}`;
-        } else {
-            classDetailText = ALL_CLASSES; // แสดง "ทุกชั้นเรียน" สำหรับกิจกรรมรวม
-        }
-
-
-        const departmentName = majorData?.name || DEFAULT_MAJOR;
-        const departmentLevel = majorData?.level || DEFAULT_LEVEL;
-        
-        const mockSemester = (activity.id % 2) + 1;
-        const recurringDays = activity.is_recurring ? 'N' : '0';
+        // ลบ mockSemester และ recurringDays ออกไปเลยเพื่อความสะอาด
 
         const cardHTML = `
             <div class="activity-card" 
                 data-id="${activity.id}" 
                 data-name="${activity.name}" 
-                > <div class="card-title">${activity.name}</div>
+                data-dept-name="${departmentName}" 
+                data-level="${departmentLevel}"
+                data-year="${classYear}"
+                data-classnum="${classNumber}">
+                
+                <div class="card-title">${activity.name}</div>
                 
                 <div class="card-detail">วันที่ ${date}</div>
                 <div class="card-detail">เวลา ${startTime} น. - ${endTime} น.</div>
                 
                 <div class="card-detail">สาขา: ${departmentName}</div>
                 <div class="card-detail">ระดับ: ${departmentLevel}</div>
-                <div class="card-detail">ชั้นเรียน: ${classDetailText}</div> <div class="card-detail">จัดขึ้นทุก ${recurringDays} วัน</div>
-                <div class="card-detail">เทอม: ${mockSemester}</div>
+                <div class="card-detail">ชั้นปี: ปี ${classYear} ห้อง ${classNumber}</div>
                 
-                </div>
+            </div>
         `;
         container.innerHTML += cardHTML;
-        
     });
 
     attachCardEventListeners();
 }
 
 // ==========================================================
-// === 3. FILTER LOGIC & EVENT HANDLERS (ถูกลบออกทั้งหมด) ===
+// === 3. FILTER LOGIC & EVENT HANDLERS (จากโค้ดแรก) ===
 // ==========================================================
-// 💡 ลบฟังก์ชัน handleLevelChange, handleMajorChange, handleYearChange, filterActivities ออกทั้งหมด
+
+function handleLevelChange() {
+    updateMajorFilter();
+    updateYearFilter();
+    updateClassNumberFilter();
+    filterActivities(cachedActivities);
+}
+
+function handleMajorChange() {
+    updateYearFilter();
+    updateClassNumberFilter();
+    filterActivities(cachedActivities);
+}
+
+function handleYearChange() {
+    updateClassNumberFilter();
+    filterActivities(cachedActivities);
+}
+
+function filterActivities(activities) {
+    const keyword = activityNameInput.value.toLowerCase().trim();
+    const selectedLevel = levelSelect.value;
+    const selectedDept = departmentSelect.value;
+    const selectedYear = studentYearSelect.value;
+    const selectedClassNum = classNumberSelect.value;
+
+    let visibleCount = 0;
+    const container = document.getElementById('activityCardContainer');
+    
+    activities.forEach(activity => {
+        const card = document.querySelector(`.activity-card[data-id="${activity.id}"]`);
+        if (!card) return;
+
+        const activityName = activity.name.toLowerCase();
+        
+        // ดึงค่าจาก Data Attributes ของการ์ด
+        const activityLevel = card.dataset.level || '';
+        const activityDeptName = card.dataset.deptName || '';
+        const activityYear = card.dataset.year || '';
+        const activityClassNum = card.dataset.classnum || '';
+
+        // Logic การกรองแบบใหม่ ตรวจสอบตรงไปตรงมา
+        const matchName = activityName.includes(keyword);
+        const matchLevel = selectedLevel === '' || activityLevel === selectedLevel;
+        const matchDept = selectedDept === '' || activityDeptName === selectedDept;
+        const matchYear = selectedYear === '' || activityYear === selectedYear;
+        const matchClassNum = selectedClassNum === '' || activityClassNum === selectedClassNum;
+
+        const isMatch = matchName && matchLevel && matchDept && matchYear && matchClassNum;
+
+        // ถ้าตรงเงื่อนไขให้แสดง (ปล่อยว่างคือกลับไปใช้ CSS เริ่มต้นของมัน)
+        card.style.display = isMatch ? '' : 'none';
+
+        if (isMatch) visibleCount++;
+    });
+
+    // แสดง/ซ่อนข้อความ "ไม่พบกิจกรรม"
+    const noResults = document.getElementById('no-results');
+    if (visibleCount === 0 && !noResults) {
+        container.innerHTML += '<p id="no-results" style="text-align: center; width: 100%; margin-top: 20px;">ไม่พบกิจกรรมตามเงื่อนไขที่เลือก</p>';
+    } else if (visibleCount > 0 && noResults) {
+        noResults.remove();
+    }
+}
 
 // ==========================================================
-// === 4. CARD EVENT LISTENERS (เหลือแค่คลิกการ์ด) ===
+// === 4. CARD EVENT LISTENERS (Edit/Delete) ===
 // ==========================================================
 
 function attachCardEventListeners() {
 
-    // 💡 1. Listener สำหรับการ์ดทั้งใบ (ไปหน้าเช็คชื่อ)
+    // 💡 1. (เพิ่มใหม่) Listener สำหรับการ์ดทั้งใบ (ไปหน้าเช็คชื่อ)
     document.querySelectorAll('.activity-card').forEach(card => {
         card.addEventListener('click', (event) => {
             
-            // ถ้าที่คลิกคือไอคอน (fas) ให้ข้ามไป (เดิมมีไว้ป้องกันปุ่ม Edit/Delete ซึ่งถูกลบไปแล้ว)
+            // ถ้าที่คลิกคือไอคอน (fas) ให้ข้ามไป (ปล่อยให้ Listener ของไอคอนทำงาน)
             if (event.target.classList.contains('fas')) {
                 return;
             }
 
-            // ไปหน้า Check_activities (เช็คชื่อ)
+            // ถ้าคลิกที่การ์ด (ไม่ใช่ไอคอน) ให้ไปหน้า Check_student
             const activityId = card.dataset.id;
             window.location.href = `Check_activities.html?activityId=${activityId}`;
         });
     });
 
-    // 💡 2. ลบ Listener ปุ่มลบ และ 3. Listener ปุ่มแก้ไข ออก
-}
-
-let currentFilters = {
-    level: '',
-    major: '',
-    year: '',
-    classNumber: '',
-    search: ''
-};
-
-function getFilteredActivities(activities) {
-    let filtered = [...activities];
-    const { level, major, year, classNumber, search } = currentFilters;
-
-    if (level) {
-        filtered = filtered.filter(a => a.class?.major?.level === level);
-    }
-    if (major) {
-        filtered = filtered.filter(a => a.class?.major?.name === major);
-    }
-    if (year) {
-        filtered = filtered.filter(a => a.class?.year.toString() === year || a.class === null); // รวมกิจกรรมรวม
-    }
-    if (classNumber) {
-        filtered = filtered.filter(a => a.class?.class_number.toString() === classNumber || a.class === null); // รวมกิจกรรมรวม
-    }
-    if (search) {
-        const searchTerm = search.toLowerCase();
-        filtered = filtered.filter(a => 
-            a.name.toLowerCase().includes(searchTerm) ||
-            a.class?.major?.name.toLowerCase().includes(searchTerm) ||
-            a.class?.major?.level.toLowerCase().includes(searchTerm)
-        );
-    }
-    return filtered;
-}
-
-function initFilters() {
-    const activities = cachedActivities;
+    // 💡 2. (แก้ไข) Listener ปุ่มลบ
+    document.querySelectorAll('.delete-btn').forEach(button => {
+        button.addEventListener('click', (event) => {
+            event.stopPropagation(); // ⬅️ หยุด event ไม่ให้ทะลุไปที่การ์ด
+            const card = event.target.closest('.activity-card');
+            activityIdToDelete = card.dataset.id;
+            const activityName = card.dataset.name;
+            showConfirmModal(activityName);
+        });
+    });
     
-    // ดึงค่าที่ไม่ซ้ำกัน
-    const uniqueMajors = [...new Set(activities.map(a => a.class?.major?.name).filter(n => n))].sort();
-    const uniqueLevels = [...new Set(activities.map(a => a.class?.major?.level).filter(n => n))].sort();
-    const uniqueYears = [...new Set(activities.map(a => a.class?.year).filter(n => n))].sort((a, b) => a - b);
-    const uniqueClasses = [...new Set(activities.map(a => a.class?.class_number).filter(n => n))].sort((a, b) => a - b);
-    
-    // เติมค่าลงใน Dropdown
-    fillSelect('level', uniqueLevels, 'ทุกระดับ');
-    fillSelect('department', uniqueMajors, 'ทุกสาขาวิชา');
-    fillSelect('studentYear', uniqueYears, 'ทุกชั้นปี', 'ปี ');
-    fillSelect('classNumber', uniqueClasses, 'ทุกห้อง', 'ห้อง ');
-    
-    // ตั้งค่า Event Listeners
-    document.getElementById('level')?.addEventListener('change', updateFilters);
-    document.getElementById('department')?.addEventListener('change', updateFilters);
-    document.getElementById('studentYear')?.addEventListener('change', updateFilters);
-    document.getElementById('classNumber')?.addEventListener('change', updateFilters);
-    document.getElementById('activityNameInput')?.addEventListener('input', updateFilters);
-}
-
-function fillSelect(elementId, items, placeholder, prefix = "") {
-    const select = document.getElementById(elementId);
-    if (!select) return;
-    select.innerHTML = `<option value="">${placeholder}</option>`;
-    items.forEach(item => {
-        const option = document.createElement("option");
-        option.value = item;
-        option.textContent = prefix + item;
-        select.appendChild(option);
+    // 💡 3. (แก้ไข) Listener ปุ่มแก้ไข
+    document.querySelectorAll('.edit-btn').forEach(button => {
+        button.addEventListener('click', (event) => {
+            event.stopPropagation(); // ⬅️ หยุด event ไม่ให้ทะลุไปที่การ์ด
+            const card = event.target.closest('.activity-card');
+            const activityId = card.dataset.id;
+            window.location.href = `Edit_activity.html?activityId=${activityId}`;
+        });
     });
 }
 
-function updateFilters() {
-    currentFilters.level = document.getElementById('level')?.value || '';
-    currentFilters.major = document.getElementById('department')?.value || '';
-    currentFilters.year = document.getElementById('studentYear')?.value || '';
-    currentFilters.classNumber = document.getElementById('classNumber')?.value || '';
-    currentFilters.search = document.getElementById('activityNameInput')?.value || '';
-    
-    const filtered = getFilteredActivities(cachedActivities);
-    RenderActivityCards(filtered, document.getElementById('activityCardContainer'));
+// ==========================================================
+// === 5. MODAL FUNCTIONS ===
+// ==========================================================
+
+let confirmDialog;
+let activityNameSpan;
+let cancelDeleteBtn;
+let confirmDeleteBtn;
+let closeModalBtn;
+
+function showConfirmModal(name) {
+    activityNameSpan.textContent = name;
+    confirmDialog.style.display = 'flex';
 }
 
+function hideConfirmModal() {
+    confirmDialog.style.display = 'none';
+    activityIdToDelete = null;
+}
+
+if (confirmDialog) {
+    cancelDeleteBtn.addEventListener('click', hideConfirmModal);
+    if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', hideConfirmModal);
+    }
+    
+    confirmDeleteBtn.addEventListener('click', async () => {
+        if (activityIdToDelete) {
+            
+            try {
+                // 1. ลบ 'ตัวลูก' (ข้อมูลเช็คชื่อ) ทั้งหมดที่เกี่ยวข้องก่อน
+                const { error: checkError } = await supabaseClient
+                    .from('activity_check')
+                    .delete()
+                    .eq('activity_id', activityIdToDelete);
+                
+                if (checkError) throw checkError; // ถ้าลบตัวลูกไม่ผ่าน ให้หยุดทันที
+
+                // 2. ลบ 'ตัวแม่' (กิจกรรม)
+                const { error: activityError } = await supabaseClient
+                    .from('activity')
+                    .delete()
+                    .eq('id', activityIdToDelete);
+
+                if (activityError) throw activityError; // ถ้าลบตัวแม่ไม่ผ่าน ให้หยุด
+
+                // 3. ถ้าสำเร็จทั้งหมด
+                alert('ลบกิจกรรมเรียบร้อยแล้ว!');
+                fetchActivities(); // โหลดการ์ดใหม่
+
+            } catch (error) {
+                // 4. ถ้าเกิดข้อผิดพลาด
+                console.error('Delete error:', error);
+                alert(`เกิดข้อผิดพลาดในการลบ: ${error.message}`);
+            }
+        }
+        hideConfirmModal();
+    });
+}
+// ใน .js ของหน้าที่แสดงการ์ดกิจกรรม
+
+// ==========================================================
+// === 6. INITIALIZATION ===
+// ==========================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 💡 ลบการกำหนดค่าตัวแปร DOM สำหรับ Filter และ Modal ออกทั้งหมด
+    departmentSelect = document.getElementById('department');
+    levelSelect = document.getElementById('level');
+    studentYearSelect = document.getElementById('studentYear');
+    classNumberSelect = document.getElementById('classNumber');
+    activityNameInput = document.getElementById('activityNameInput');
 
-    // 1. Populate Dropdowns 💡 ลบ populateFilters(); ออก
+    // 💡💡💡 [ FIX START ] 💡💡💡
+    
+    // 4. กำหนดค่าตัวแปร Modal (หลังจาก DOM โหลดแล้ว)
+    confirmDialog = document.getElementById('confirmDialog');
+    activityNameSpan = document.getElementById('activityToDeleteName');
+    cancelDeleteBtn = document.getElementById('cancelDelete');
+    confirmDeleteBtn = document.getElementById('confirmDelete');
 
-    // 2. Fetch Activities (ใช้ฟังก์ชันใหม่ที่กรองด้วย Class ID แล้ว)
+    // 5. ย้ายโค้ดที่ 'ตัด' มาจากข้อ 2 มาวางที่นี่
+    if (confirmDialog) {
+        // (ต้อง query แบบนี้เพราะ confirmDialog ถูกกำหนดค่าแล้ว)
+        closeModalBtn = confirmDialog.querySelector('.modal-header .close-btn'); 
+
+        cancelDeleteBtn.addEventListener('click', hideConfirmModal);
+        if (closeModalBtn) {
+            closeModalBtn.addEventListener('click', hideConfirmModal);
+        }
+        
+        // (โค้ดลบ 2 ชั้น ที่เราทำไว้ก่อนหน้า)
+        confirmDeleteBtn.addEventListener('click', async () => {
+            if (activityIdToDelete) {
+                
+                try {
+                    // 1. ลบ 'ตัวลูก' (ข้อมูลเช็คชื่อ)
+                    const { error: checkError } = await supabaseClient
+                        .from('activity_check')
+                        .delete()
+                        .eq('activity_id', activityIdToDelete);
+                    
+                    if (checkError) throw checkError; 
+
+                    // 2. ลบ 'ตัวแม่' (กิจกรรม)
+                    const { error: activityError } = await supabaseClient
+                        .from('activity')
+                        .delete()
+                        .eq('id', activityIdToDelete);
+
+                    if (activityError) throw activityError; 
+
+                    // 3. ถ้าสำเร็จ
+                    alert('ลบกิจกรรมเรียบร้อยแล้ว!');
+                    fetchActivities(); 
+
+                } catch (error) {
+                    // 4. ถ้าพลาด
+                    console.error('Delete error:', error);
+                    alert(`เกิดข้อผิดพลาดในการลบ: ${error.message}`);
+                }
+            }
+            hideConfirmModal();
+        });
+    }
+    // 💡💡💡 [ FIX END ] 💡💡💡
+
+
+    if (!departmentSelect || !levelSelect || !studentYearSelect || !classNumberSelect || !activityNameInput) {
+        console.error("Critical Error: One or more required DOM elements were not found.");
+        return;
+    }
+
+    // 1. Populate Dropdowns
+    populateFilters();
+
+    // 2. Fetch Activities
     fetchActivities();
 
-    // 3. Attach Event Listeners 💡 ลบ Event Listeners สำหรับ Filter ออกทั้งหมด
+    // 3. Attach Event Listeners
+    levelSelect.addEventListener('change', handleLevelChange);
+    departmentSelect.addEventListener('change', handleMajorChange);
+    studentYearSelect.addEventListener('change', handleYearChange);
+    classNumberSelect.addEventListener('change', () => filterActivities(cachedActivities));
+    activityNameInput.addEventListener('input', () => filterActivities(cachedActivities));
 });
