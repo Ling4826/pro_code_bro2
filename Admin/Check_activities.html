@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="th">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>ตรวจสอบกิจกรรม - PBNTC Activity System</title>
+        <link rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+        <link rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+        <script
+            src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+        <script src="JavaScript//Check_activities.js"></script>
+        <link rel="stylesheet" href="../CSS/Edit_style.css">
+        <script src="JavaScript/auth_guard.js"></script>
+        <style>
+            /* สไตล์เสริมสำหรับการแสดงผลตารางเช็กชื่อ */
+            .attendance-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+                margin-bottom: 20px;
+            }
+            
+            .attendance-table th, .attendance-table td {
+                border: 1px solid #ddd;
+                padding: 10px;
+                text-align: center;
+            }
+
+            .attendance-table th {
+                background-color: #f2f2f2;
+                font-weight: bold;
+            }
+
+            /* =========================================
+               ส่วนรองรับมือถือ (Mobile Responsive)
+               ========================================= */
+            @media screen and (max-width: 1024px) {
+                
+                /* 1. หัวใจสำคัญ: เพิ่มพื้นที่ด้านล่างเยอะๆ ให้เลื่อนได้สุด */
+                .content {
+                    padding-bottom: 150px !important; /* ใส่เบาะรองก้น 150px */
+                    padding-left: 15px;
+                    padding-right: 15px;
+                    overflow-x: hidden; /* ป้องกันหน้าจอเลื่อนซ้ายขวา */
+                }
+
+                /* 2. ปรับฟอร์มให้เรียงแนวตั้ง ไม่บีบกัน */
+                .form-row {
+                    flex-direction: column;
+                    gap: 15px;
+                }
+
+                .form-group, .input-icon-group {
+                    width: 100% !important; /* ขยายเต็มจอ */
+                }
+                
+                .form-group input, 
+                .form-group select, 
+                .input-icon-group input {
+                    width: 100% !important;
+                }
+
+                /* 3. จัดกลุ่มเวลาให้ดูง่ายขึ้น */
+                .time-group {
+                    flex-direction: column;
+                    width: 100%;
+                }
+
+                /* 4. ปรับตารางให้เลื่อนซ้ายขวาได้ (ถ้าตกขอบ) */
+                .attendance-table {
+                    display: block;
+                    width: 100%;
+                    overflow-x: auto; /* อนุญาตให้เลื่อนแนวนอน */
+                    white-space: nowrap; /* ห้ามตัดคำ */
+                }
+
+                /* 5. ปรับปุ่มบันทึกให้กดง่ายๆ เต็มจอ */
+                .create-button {
+                    width: 100%;
+                    padding: 15px;
+                    font-size: 18px;
+                    margin-top: 20px;
+                    margin-bottom: 30px; /* ดันขอบล่างเพิ่มอีก */
+                }
+
+                /* ปรับส่วนหัวข้อและปุ่ม Excel ด้านบน */
+                .content > div:first-child {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 15px;
+                }
+                
+                #exportExcelBtn {
+                    width: 100% !important;
+                    justify-content: center;
+                }
+            }
+        </style>
+
+        <script>
+            // เรียกใช้ flatpickr สำหรับ date picker
+            document.addEventListener('DOMContentLoaded', function() {
+                flatpickr("#activityDate", {
+                    dateFormat: "d/m/Y",
+                    locale: "th"
+                });
+            });
+        </script>
+    </head>
+    <body>
+        <div class="header">
+            <div class="logo-area">
+                <i class="fas fa-bars" id="sidebarToggle"></i>
+
+                <img src="../pbntc-logo.webp" alt="PBNTC Logo" class="logo">
+                PBNTC
+            </div>
+        </div>
+
+        <div class="main-container">
+            <div class="sidebar" id="sidebar">
+                <nav>
+                    <a href="Home.html"><i
+                            class="fas fa-home"></i> <span>หน้าหลัก</span></a>
+                    <a href="Create_activity.html"><i class="fas fa-edit"></i>
+                        <span>สร้างกิจกรรม</span></a>
+                    <a href="Activity_list.html"  class="active"><i
+                            class="fas fa-list-alt" class="active"></i>
+                        <span>รายการกิจกรรม</span></a>
+                    <a href="Overview_activity.html"><i
+                            class="fas fa-clipboard-check"></i>
+                        <span>ภาพรวมกิจกรรม</span></a>
+                    <a href="Professor_Assistant.html"><i
+                            class="fas fa-building"></i>
+                        <span>ผู้ช่วยอาจารย์</span></a>
+                    <a href="Term_results_summary.html"><i
+                            class="fas fa-poll"></i> <span>สรุปผลเทอม</span></a>
+                    <a href="../index.html" class="logout"><i
+                            class="fas fa-sign-out-alt"></i>
+                        <span>ลงชื่อเข้าใช้ออก</span></a>
+                </nav>
+            </div>
+
+            <div class="content">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 1px solid #eee;">
+
+                    <div
+                        style="display: flex; align-items: center; gap: 15px; cursor: pointer; color: #333;"
+                        onclick="window.location.href='Activity_list.html'"
+                        onmouseover="this.style.color='#d9534f'"
+                        onmouseout="this.style.color='#333'">
+
+                        <i class="fas fa-chevron-left"
+                            style="font-size: 28px;"></i>
+
+                        <h2 class="page-title"
+                            style="margin: 0; font-size: 28px;">ตรวจสอบกิจกรรม</h2>
+                    </div>
+
+                  
+                </div>
+
+                <form id="createActivityForm">
+                    <div class="form-row">
+                        <div class="form-group" style="width: 100%;">
+                            <label for="activityName"
+                                class="required">ชื่อกิจกรรม</label>
+                            <input type="text" id="activityName"
+                                name="activityName" required disabled>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="activityDate"
+                                class="required">วันที่จัดกิจกรรม</label>
+                            <div class="input-icon-group">
+                                <input type="text" id="activityDate"
+                                    name="activityDate" placeholder="วว/ดด/ปปปป"
+                                    required disabled>
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="startTime"
+                                class="required">เวลาเริ่ม</label>
+                            <div class="input-icon-group">
+                                <input type="text" id="startTime"
+                                    name="startTime" required
+                                    class="flatpickr-time"
+                                    placeholder="เลือกเวลาเริ่ม" disabled>
+                                <i class="fas fa-clock"></i>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="endTime"
+                                class="required">เวลาสิ้นสุด</label>
+                            <div class="input-icon-group">
+                                <input type="text" id="endTime" name="endTime"
+                                    required class="flatpickr-time"
+                                    placeholder="เลือกเวลาสิ้นสุด" disabled>
+                                <i class="fas fa-clock"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="activityType"
+                                class="required">ประเภทกิจกรรม</label>
+                            <select id="activityType" name="activityType"
+                                disabled required>
+                                <option value="activity">กิจกรรมทั่วไป
+                                    (แผนก/วิทยาลัย)</option>
+                                <option value="flag_ceremony">กิจกรรมหน้าเสาธง
+                                    (เช็คชื่อเข้าแถว)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="level">ระดับ</label>
+                            <div class="input-icon-group">
+                                <select id="level" name="level" disabled>
+                                    <option value>เลือกระดับ</option>
+                                    <option value="ปวช.">ปวช.</option>
+                                    <option value="ปวส.">ปวส.</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="department">สาขา</label>
+                            <div class="input-icon-group">
+                                <select id="department" name="department"
+                                    disabled> <option value>เลือกสาขา</option>
+                                    <option value="1">ไฟฟ้า</option>
+                                    <option value="2">ช่างยนต์</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="semester" class="required">เทอม</label>
+                            <select id="semester" name="semester" required
+                                disabled>
+                                <option value>เลือกเทอม</option>
+                                <option value="1">เทอม 1</option>
+                                <option value="2">เทอม 2</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="studentYear" class="required">ปี</label>
+                            <select id="studentYear" name="studentYear" required
+                                disabled>
+                                <option value>เลือกปี</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="studentClass">ห้อง</label>
+                            <select id="studentClass" name="studentClass"
+                                disabled>
+                                <option value>เลือกห้อง</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"
+                            style="flex: unset; width: 300px; flex-direction: row; align-items: center;">
+                            <label for="recurringDays"
+                                style="width: 100px; font-weight: normal; margin-right: 10px;">จัดขึ้นทุกๆ</label>
+                            <input type="number" id="recurringDays"
+                                name="recurringDays" value="0"
+                                style="width: 80px;" disabled>
+                            <span
+                                style="font-weight: bold; margin-left: 10px;">วัน</span>
+                        </div>
+                    </div>
+                    <div>
+                        <table class="attendance-table">
+                            <thead>
+                                <tr>
+                                    <th>ชื่อ</th>
+                                    <th>รหัสนักศึกษา</th>
+                                    <th>มา</th>
+                                    <th>ขาด</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                </tr>
+                                <tr>
+
+                                </tr>
+                                <tr>
+
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <button type="submit"
+                        class="create-button">บันทึกการเข้าเรียน</button>
+
+                </form>
+            </div>
+        </div>
+        <script>
+        const toggleBtn = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+
+    // ฟังก์ชันตรวจสอบขนาดจอและตั้งค่าเมนู
+    function initSidebar() {
+        const isMobile = window.innerWidth <= 1024; // เช็คว่าเป็นมือถือ/ไอแพดหรือไม่
+        const savedState = localStorage.getItem('sidebarState');
+
+        if (isMobile) {
+            // บนมือถือ: เริ่มต้นต้อง "หุบ" (collapsed) เสมอ เพื่อไม่ให้บังเนื้อหา
+            sidebar.classList.add('collapsed'); 
+        } else {
+            // บนคอม: เอาตามที่เคยจำไว้ (ถ้าจำว่าหุบ ก็หุบ)
+            if (savedState === 'collapsed') {
+                sidebar.classList.add('collapsed');
+            } else {
+                sidebar.classList.remove('collapsed');
+            }
+        }
+    }
+
+    // เรียกใช้ตอนเปิดเว็บ
+    initSidebar();
+
+    // เมื่อกดปุ่ม
+    toggleBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('collapsed');
+        
+        // บันทึกสถานะ (เฉพาะตอนใช้คอม มือถือไม่ต้องจำ เพราะควรปิดเสมอตอนเริ่ม)
+        if (window.innerWidth > 1024) {
+            if (sidebar.classList.contains('collapsed')) {
+                localStorage.setItem('sidebarState', 'collapsed');
+            } else {
+                localStorage.setItem('sidebarState', 'expanded');
+            }
+        }
+    });
+
+    </script>
+    </body>
+</html>

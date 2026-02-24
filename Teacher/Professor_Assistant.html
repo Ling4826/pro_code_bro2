@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ผู้ช่วยอาจารย์ - PBNTC</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../CSS/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script src="JavaScript/Professor_Assistant.js"></script>
+    <script src="JavaScript/auth_guard.js"></script>
+
+    <style>
+        /* =========================================
+           1. สไตล์พื้นฐาน (Desktop)
+           ========================================= */
+        .filter-controls {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: flex-end; 
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .filter-group label {
+            font-weight: bold;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .filter-group select {
+            padding: 0 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            min-width: 180px;
+            height: 40px;
+            font-size: 14px;
+            background-color: #fff;
+            cursor: pointer;
+        }
+        
+        .filter-group select:focus {
+            border-color: #d9534f;
+            outline: none;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            border-radius: 8px;
+            overflow: hidden;
+            font-size: 14px;
+            white-space: nowrap; /* ⚠️ ป้องกันข้อความตัดบรรทัด */
+        }
+
+        .data-table th, .data-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .data-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        .data-table tr:hover { background-color: #f9f9f9; }
+
+        /* =========================================
+           2. ส่วนมือถือ & Tablet (รองรับ 800px)
+           ========================================= */
+        /* ⚠️ เปลี่ยนจาก 768px เป็น 1024px เพื่อให้จอ 800px ได้ใช้โหมดนี้ */
+        @media screen and (max-width: 1024px) {
+            
+            .filter-controls {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 15px;
+                padding: 15px;
+            }
+
+            .filter-group, .filter-group select {
+                width: 100%;
+            }
+
+            /* ทำให้เนื้อหาและตารางเลื่อนแนวนอนได้ */
+            .content {
+                overflow-x: hidden; /* ซ่อน scroll ของ content หลัก */
+                padding: 15px;
+                padding-bottom: 100px; /* เพิ่มพื้นที่ด้านล่าง */
+            }
+            
+            /* หุ้มตารางด้วย div ที่เลื่อนได้ (ถ้ามี Wrapper) หรือสั่งที่ตารางโดยตรง */
+            .data-table {
+                display: block;
+                width: 100%;
+                overflow-x: auto; /* ✅ อนุญาตให้เลื่อนเฉพาะตาราง */
+                -webkit-overflow-scrolling: touch; /* เลื่อนลื่นๆ บน iOS */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo-area">
+            <i class="fas fa-bars" id="sidebarToggle"></i>
+            <img src="../pbntc-logo.webp" alt="PBNTC Logo" class="logo">
+            PBNTC
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar" id="sidebar">
+            <nav>
+                <a href="Home.html"><i class="fas fa-home"></i> <span>หน้าหลัก</span></a>
+                <a href="Create_activity.html"><i class="fas fa-edit"></i> <span>สร้างกิจกรรม</span></a>
+                <a href="Activity_list.html"><i class="fas fa-list-alt" ></i> <span>รายการกิจกรรม</span></a>
+                <a href="Professor_Assistant.html" class="active"><i class="fas fa-building"></i> <span>ผู้ช่วยอาจารย์</span></a>
+                <a href="Term_results_summary.html"><i class="fas fa-poll"></i> <span>สรุปผลเทอม</span></a>
+                <a href="../index.html" class="logout"><i class="fas fa-sign-out-alt"></i> <span>ลงชื่อเข้าใช้ออก</span></a>
+            </nav>
+        </div>
+
+        <div class="content">
+            <h2 class="page-title">ผู้ช่วยอาจารย์</h2>
+
+            <div class="filter-controls">
+                <div class="filter-group">
+                    <label for="level">ระดับ</label>
+                    <select id="level"><option value>เลือกระดับ</option></select>
+                </div>
+                <div class="filter-group">
+                    <label for="studentYear">ชั้นปี</label>
+                    <select id="studentYear"><option value>เลือกชั้นปี</option></select>
+                </div>
+                <div class="filter-group">
+                    <label for="department">สาขา</label>
+                    <select id="department"><option value>เลือกสาขา</option></select>
+                </div>
+                <div class="filter-group">
+                    <label for="classNumber">ห้อง</label>
+                    <select id="classNumber"><option value>เลือกห้อง</option></select>
+                </div>
+            </div>
+
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ชื่อ</th>
+                        <th>ระดับ</th>
+                        <th>ชั้นปี</th>
+                        <th>ห้อง</th>
+                        <th>รหัสนักศึกษา</th>
+                        <th>บทบาท</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    </tbody>
+            </table>
+        </div> 
+    </div>
+
+    <script>
+        const toggleBtn = document.getElementById('sidebarToggle');
+        const sidebar = document.getElementById('sidebar');
+
+        function initSidebar() {
+            const isMobile = window.innerWidth <= 1024;
+            const savedState = localStorage.getItem('sidebarState');
+            if (isMobile) {
+                sidebar.classList.add('collapsed'); 
+            } else {
+                if (savedState === 'collapsed') {
+                    sidebar.classList.add('collapsed');
+                } else {
+                    sidebar.classList.remove('collapsed');
+                }
+            }
+        }
+        initSidebar();
+
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+            if (window.innerWidth > 1024) {
+                if (sidebar.classList.contains('collapsed')) {
+                    localStorage.setItem('sidebarState', 'collapsed');
+                } else {
+                    localStorage.setItem('sidebarState', 'expanded');
+                }
+            }
+        });
+    </script>
+</body>
+</html>

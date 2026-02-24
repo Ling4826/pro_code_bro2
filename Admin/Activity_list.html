@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>รายการกิจกรรม - PBNTC Activity System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../CSS/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+     <script src="JavaScript/auth_guard.js"></script>
+    <script src="JavaScript/Activity_list.js"></script>
+
+    <style>
+        /* =========================================
+           1. สไตล์พื้นฐาน (Desktop)
+           ========================================= */
+        .filter-controls {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: flex-end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .filter-group label {
+            font-weight: bold;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .filter-group select {
+            padding: 0 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            min-width: 150px;
+            height: 45px;
+            font-size: 14px;
+            background-color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-group select:hover {
+            border-color: #337ab7;
+            background-color: #f0f8ff;
+        }
+
+        .search-input-group {
+            position: relative;
+            flex-basis: 300px; 
+            flex-grow: 1;
+            max-width: 400px;
+        }
+
+        .search-input-group i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+            font-size: 18px;
+            pointer-events: none;
+            transition: color 0.3s;
+        }
+
+        .search-input-group input {
+            width: 100%;
+            height: 45px;
+            padding-left: 45px !important;
+            padding-right: 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        .search-input-group input:focus,
+        .filter-group select:focus {
+            border-color: #d9534f;
+            box-shadow: 0 0 8px rgba(217, 83, 79, 0.3);
+            outline: none;
+            background-color: #fff;
+        }
+        
+        .search-input-group input:focus + i {
+            color: #d9534f;
+        }
+
+        /* --- การ์ดกิจกรรม --- */
+        .activity-card-container { 
+            display: flex; flex-wrap: wrap; gap: 20px; 
+        }
+
+        .activity-card {
+            width: 280px;
+            background: linear-gradient(145deg, #337ab7, #2a6699); 
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1); 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            min-height: 180px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
+        }
+        
+        .activity-card:hover {
+            transform: translateY(-10px) scale(1.02); 
+            box-shadow: 0 20px 40px rgba(51, 122, 183, 0.4); 
+            border-color: rgba(255, 255, 255, 0.4);
+            z-index: 10;
+        }
+
+        .card-actions {
+            margin-top: auto; display: flex; justify-content: flex-end; gap: 10px; padding-top: 15px;
+        }
+
+        .card-actions i {
+            background: rgba(255,255,255,0.2); padding: 8px; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;
+        }
+        .card-actions i:hover { background: rgba(255,255,255,0.4); transform: scale(1.1); }
+
+        .card-actions .fa-edit:hover, .card-actions .fa-pen:hover {
+            background-color: #ffc107 !important; color: #333 !important;
+            box-shadow: 0 0 15px #ffc107; transform: scale(1.15) rotate(-5deg);
+        }
+
+        .card-actions .fa-trash:hover, .card-actions .fa-trash-alt:hover {
+            background-color: #dc3545 !important; color: white !important;
+            box-shadow: 0 0 15px #dc3545; transform: scale(1.15) rotate(5deg);
+        }
+
+        /* =========================================
+           2. ส่วนมือถือ & Tablet (รองรับ 800px)
+           ========================================= */
+        /* ⚠️ เปลี่ยนจาก 768px เป็น 1024px เพื่อให้จอ 800px ได้ใช้โหมดนี้ */
+        @media screen and (max-width: 1024px) {
+            .filter-controls {
+                flex-direction: column; align-items: stretch; gap: 15px; padding: 15px;
+            }
+            .search-input-group { max-width: 100%; flex-basis: auto; }
+            .filter-group { width: 100%; }
+            .filter-group select { width: 100%; }
+            .activity-card { width: 100%; margin-bottom: 15px; } /* การ์ดเต็มความกว้าง */
+            .content { padding: 15px; padding-bottom: 100px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo-area">
+            <i class="fas fa-bars" id="sidebarToggle"></i>
+            <img src="../pbntc-logo.webp" alt="PBNTC Logo" class="logo">
+            PBNTC
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar" id="sidebar">
+            <nav>
+                <a href="Home.html"><i class="fas fa-home"></i> <span>หน้าหลัก</span></a>
+                <a href="Create_activity.html"><i class="fas fa-edit"></i> <span>สร้างกิจกรรม</span></a>
+                <a href="Activity_list.html" class="active"><i class="fas fa-list-alt"></i> <span>รายการกิจกรรม</span></a>
+                <a href="Overview_activity.html"><i class="fas fa-clipboard-check"></i> <span>ภาพรวมกิจกรรม</span></a>
+                <a href="Professor_Assistant.html"><i class="fas fa-building"></i> <span>ผู้ช่วยอาจารย์</span></a>
+                <a href="Term_results_summary.html"><i class="fas fa-poll"></i> <span>สรุปผลเทอม</span></a>
+                <a href="../index.html" class="logout"><i class="fas fa-sign-out-alt"></i> <span>ลงชื่อเข้าใช้ออก</span></a>
+            </nav>
+        </div>
+
+        <div class="content">
+            <h2 class="page-title">รายการกิจกรรม</h2>
+
+            <div class="filter-controls">
+                <div class="search-input-group">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="ค้นหาชื่อกิจกรรม..." id="activityNameInput">
+                </div>
+                <div class="filter-group">
+                    <label for="level">ระดับ</label>
+                    <select id="level"><option value>ทั้งหมด</option><option value="ปวช.">ปวช.</option><option value="ปวส.">ปวส.</option></select>
+                </div>
+                <div class="filter-group">
+                    <label for="studentYear">ชั้นปี</label>
+                    <select id="studentYear"><option value>ทั้งหมด</option></select>
+                </div>
+                <div class="filter-group">
+                    <label for="department">สาขา</label>
+                    <select id="department"><option value>ทั้งหมด</option></select>
+                </div>
+                <div class="filter-group">
+                    <label for="classNumber">ห้อง</label>
+                    <select id="classNumber"><option value>ทั้งหมด</option></select>
+                </div>
+            </div>
+
+            <div class="activity-card-container" id="activityCardContainer"></div>
+        </div>
+    </div>
+
+    <div id="confirmDialog" class="modal-overlay" style="display: none;">
+        <div class="modal-dialog">
+            <div class="modal-header"><h3>ยืนยัน</h3><span class="close-btn">&times;</span></div>
+            <div class="modal-body"><p>แน่ใจว่าจะลบกิจกรรม <span id="activityToDeleteName"></span></p></div>
+            <div class="modal-footer">
+                <button id="cancelDelete" class="btn btn-cancel">ยกเลิก</button>
+                <button id="confirmDelete" class="btn btn-confirm">ยืนยัน</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const toggleBtn = document.getElementById('sidebarToggle');
+        const sidebar = document.getElementById('sidebar');
+
+        function initSidebar() {
+            const isMobile = window.innerWidth <= 1024;
+            const savedState = localStorage.getItem('sidebarState');
+            if (isMobile) {
+                sidebar.classList.add('collapsed'); 
+            } else {
+                if (savedState === 'collapsed') {
+                    sidebar.classList.add('collapsed');
+                } else {
+                    sidebar.classList.remove('collapsed');
+                }
+            }
+        }
+        initSidebar();
+
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+            if (window.innerWidth > 1024) {
+                if (sidebar.classList.contains('collapsed')) {
+                    localStorage.setItem('sidebarState', 'collapsed');
+                } else {
+                    localStorage.setItem('sidebarState', 'expanded');
+                }
+            }
+        });
+    </script>
+</body>
+</html>

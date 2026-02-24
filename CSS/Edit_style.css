@@ -1,0 +1,686 @@
+    /* CSS เฉพาะสำหรับหน้านี้ (ใช้โค้ดเดิมที่คุณสร้างไว้) */
+        /* ตั้งค่าพื้นฐาน */
+body {
+    margin: 0;
+    font-family: Tahoma, sans-serif;
+    background-color: #f4f4f4;
+}
+
+/* Header (แถบด้านบนสีส้ม) */
+.header {
+    background-color: #d9534f; /* สีส้มอมแดง */
+    color: white;
+    padding: 10px 20px;
+    height: 60px; /* กำหนดความสูงเพื่อให้ logo อยู่ในระดับเดียวกับ sidebar */
+    box-sizing: border-box;
+}
+
+.logo-area {
+    font-size: 24px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+}
+
+.logo {
+    width: 40px;
+    height: 40px;
+    margin-right: 10px;
+    border-radius: 50%;
+    /* คุณควรเปลี่ยน URL รูปภาพตรงนี้ให้เป็นโลโก้จริง */
+}
+
+/* โครงสร้างหลัก (Sidebar + Content) */
+.main-container {
+    display: flex;
+    min-height: calc(100vh - 60px); /* ความสูงเต็มจอ ลบด้วยความสูง Header */
+}
+
+/* Sidebar (แถบเมนูด้านซ้ายสีดำ) */
+.sidebar {
+    width: 200px;
+    background-color: #333; /* สีดำ/เทาเข้ม */
+    color: white;
+    padding-top: 20px;
+    flex-shrink: 0;
+}
+
+.sidebar a {
+    display: block;
+    color: #ccc;
+    padding: 15px 20px;
+    text-decoration: none;
+    border-left: 5px solid transparent;
+    transition: all 0.2s;
+}
+
+.sidebar a:hover {
+    color: white;
+    background-color: #444;
+}
+
+.sidebar a.Edit_Active {
+    color: white;
+    background-color: #444;
+    border-left-color: #d9534f; /* แถบสีส้มด้านซ้าย */
+}
+
+.sidebar a i {
+    margin-right: 10px;
+    width: 20px; /* จัดให้ไอคอนจัดเรียงตรงกัน */
+}
+
+/* Content (พื้นที่เนื้อหาหลัก) */
+.content {
+    flex-grow: 1;
+    padding: 40px;
+    background-color: white;
+}
+
+/* ส่วนแสดงเวลา */
+.time-display {
+    text-align: center;
+    font-size: 18px;
+    color: #666;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+/* Function Grid (บล็อกฟังก์ชัน) */
+.function-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 คอลัมน์ */
+    gap: 30px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+/* Function Block (บล็อกกิจกรรมแต่ละอัน) */
+.function-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 180px;
+    text-align: center;
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+.sidebar a.active {
+    color: white;
+    background-color: #444;
+    border-left-color: #d9534f; /* แถบสีส้มด้านซ้าย */
+}
+
+.function-block:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.function-block i {
+    font-size: 60px;
+    margin-bottom: 15px;
+}
+
+/* --- Styles for Confirmation Dialog (Modal) --- */
+
+/* พื้นหลังมืดและกำหนดให้ Dialog อยู่ตรงกลาง */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* พื้นหลังสีดำโปร่งแสง */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+/* ตัว Modal หลัก */
+.modal-dialog {
+    background-color: white;
+    border-radius: 4px;
+    width: 450px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+/* ส่วนหัว (สีส้ม) */
+.modal-header {
+    background-color: #f0ad4e; /* สีส้ม */
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.modal-header h3 {
+    margin: 0;
+}
+
+.modal-header .close-btn {
+    font-size: 24px;
+    cursor: pointer;
+    line-height: 1;
+}
+
+/* ส่วนเนื้อหา */
+.modal-body {
+    padding: 30px 20px;
+    text-align: center;
+    font-size: 16px;
+    color: #333;
+}
+
+.modal-body #activityToDeleteName {
+    color: #d9534f; /* เน้นชื่อกิจกรรมด้วยสีแดง */
+    font-weight: bold;
+}
+
+/* ส่วนท้าย (ปุ่ม) */
+.modal-footer {
+    padding: 15px 20px;
+    text-align: right;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+/* 📌 Styles สำหรับปุ่ม (จำเป็นมากเพื่อให้ปุ่มมีสี) */
+.btn {
+    padding: 10px 25px;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-weight: bold;
+}
+
+.btn-cancel {
+    background-color: #5bc0de; /* สีฟ้า */
+    color: white;
+}
+
+.btn-confirm {
+    background-color: #d9534f; /* สีแดง */
+    color: white;
+}
+
+/* กำหนดสีตามภาพตัวอย่าง */
+.function-block.blue { background-color: #337ab7; } /* สร้างกิจกรรม - สีฟ้า */
+.function-block.red { background-color: #d9534f; }    /* แก้ไข / ลบกิจกรรม */
+.function-block.green { background-color: #5cb85c; }  /* ตรวจสอบกิจกรรม - สีเขียว */
+.function-block.orange { background-color: #f0ad4e; } /* ข้อมูลสาขา */
+.function-block.purple { background-color: #673ab7; } /* สรุปผลเทอม */
+
+
+/* *** START: CSS สำหรับหน้าตาราง (สรุปผลและข้อมูลสาขา) ***
+*/
+
+.page-title { /* ใช้แทน .content-header */
+    font-size: 26px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: #333; /* ใช้สีเข้มมาตรฐานของธีมหลัก */
+}
+
+/* สไตล์พื้นฐานของตาราง */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    text-align: left;
+}
+
+.data-table th, .data-table td {
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    font-size: 15px;
+}
+
+.data-table th {
+    background-color: #f2f2f2;
+    color: #333;
+    font-weight: 600;
+    text-align: center;
+    border-bottom: 2px solid #ccc;
+}
+
+.data-table tr:nth-child(even) {
+    background-color: #f7f7f7;
+}
+
+/* สไตล์สำหรับปุ่ม/ผลลัพธ์ในตาราง */
+.pass { color: #5cb85c; font-weight: 600; } /* เขียว */
+.fail { color: #d9534f; font-weight: 600; } /* แดง */
+.role-select { width: 120px; padding: 5px; border-radius: 4px; } /* สำหรับ Department_information.html */
+
+/* สไตล์สำหรับ Filter / Search */
+.filter-controls {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    align-items: center;
+}
+
+.filter-controls input[type="text"],
+.filter-controls select {
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 15px;
+    box-sizing: border-box;
+}
+
+.search-box {
+    position: relative;
+    flex: 1; /* ให้กล่องค้นหากินพื้นที่มากที่สุด */
+}
+
+.search-box input {
+    width: 100%;
+    padding-left: 35px; /* เว้นที่ให้ไอคอน */
+}
+
+.search-box i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #777;
+}
+
+.filter-controls label {
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+/* *** END: CSS สำหรับหน้าตาราง (สรุปผลและข้อมูลสาขา) ***
+*/
+       .form-row {
+            display: flex;
+            align-items: flex-start; /* เปลี่ยนจาก center เป็น flex-start เพื่อให้ทุกกล่องชิดขอบบนเท่ากัน */
+            margin-bottom: 25px;
+            gap: 20px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-width: 250px;
+        }
+        /* กำหนดความสูง Input ให้เท่ากันแน่นอน ทั้งช่องปกติและช่องที่มีไอคอน */
+        .form-group input, .form-group select {
+            padding: 10px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+            width: 100%;
+            height: 45px; /* เพิ่มบรรทัดนี้: ล็อคความสูงให้เท่ากันทุกช่อง */
+        }
+        .required::before {
+            content: '*';
+            color: #d9534f;
+            margin-right: 5px;
+        }
+        .time-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .create-button {
+            background-color: #5bc0de;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 4px;
+            font-size: 18px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        /* ปรับแต่งกลุ่มที่มีไอคอนให้ขยายเต็มพื้นที่ */
+        .input-icon-group {
+            position: relative;
+            width: 100%;
+            display: block; /* ตรวจสอบว่าเป็น block หรือ flex เพื่อให้เต็มความกว้าง */
+        }
+        
+        /* ให้ Input ในกลุ่มไอคอนมีความสูงเท่ากับข้างบน */
+        .input-icon-group input {
+            padding-right: 35px;
+            width: 100%;
+            height: 45px; /* ต้องเท่ากับ .form-group input ด้านบน */
+        }
+
+        .input-icon-group i {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #777;
+            pointer-events: none;
+            z-index: 2; /* ดันไอคอนมาข้างหน้าเผื่อโดนบัง */
+        }
+       .attendance-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-family: Arial, sans-serif;
+}
+
+.attendance-table th, .attendance-table td {
+    text-align: center;
+    padding: 8px 5px;
+}
+
+.attendance-table tbody tr:nth-child(odd) {
+    background-color: #fff;
+}
+.attendance-table tbody tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+.attendance-table thead th {
+    border-bottom: 2px solid #333;
+}
+
+/* ซ่อน radio button จริง */
+.attendance-table input[type="radio"] {
+    display: none;
+}
+
+/* ปุ่ม default ว่าง */
+.attendance-table label {
+    display: inline-block;
+    width: 40px;
+    height: 30px;
+    border: 2px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+}
+/* กำหนดสีกรอบตามประเภทปุ่มแต่ละประเภท */
+.attendance-table label.present-btn {
+    border-color: green; /* มา */
+}
+
+.attendance-table label.late-btn {
+    border-color: goldenrod; /* สาย */
+}
+
+.attendance-table label.absent-btn {
+    border-color: red; /* ขาด */
+}
+
+/* สีเมื่อเลือก */
+input[type="radio"]:checked + label.present-btn {
+    background-color: green;
+    border-color: green;
+}
+input[type="radio"]:checked + label.late-btn {
+    background-color: #f1c40f; /* พื้นเหลือง */
+    border-color: goldenrod;
+    color: white; /* สี text ภายใน label (ถ้าใช้ ::after) */
+    position: relative; /* เพื่อให้ ::after จัดตำแหน่งได้ */
+}
+input[type="radio"]:checked + label.absent-btn {
+    background-color: red;
+    border-color: red;
+}
+
+/* เพิ่มเครื่องหมายถูกเมื่อเลือก */
+input[type="radio"]:checked + label::after {
+    content: "✔";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+/* ปรับสีตัวเครื่องหมายถูกสำหรับสาย (พื้นเหลือง) */
+input[type="radio"]:checked + label.late-btn::after {
+    content: "✔";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white; /* สีเครื่องหมายถูก */
+    font-weight: bold;
+    font-size: 16px;
+    z-index: 1; /* ให้เหนือพื้นหลัง */
+    pointer-events: none; /* ไม่ขัดกับการคลิก */
+}
+.create-button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    background-color: #337ab7; /* สีปุ่ม "บันทึกการทำเบียน" */
+    
+    transition: all 0.2s ease-out;
+}
+
+/* เมื่อเมาส์ชี้ที่ปุ่ม "บันทึกการทำเบียน" */
+.create-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
+    filter: brightness(1.1);
+}
+
+/* เมื่อกดปุ่ม "บันทึกการทำเบียน" */
+.create-button:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    filter: brightness(0.9);
+}
+
+
+/* 2. ปุ่ม "บันทึกเป็น Excel" ด้านบนขวา */
+/* ใช้ ID เพื่อความเฉพาะเจาะจง */
+#exportExcelBtn {
+    background-color: #2ecc71; /* สีปุ่ม Excel */
+    margin: 0 !important; /* ทับ margin เดิม */
+    width: auto !important;
+    padding: 10px 20px !important;
+    height: 40px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease-out;
+}
+
+/* เมื่อเมาส์ชี้ที่ปุ่ม "บันทึกเป็น Excel" */
+#exportExcelBtn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
+    filter: brightness(1.1);
+}
+
+/* เมื่อกดปุ่ม "บันทึกเป็น Excel" */
+#exportExcelBtn:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    filter: brightness(0.9);
+}
+
+/* 3. ปุ่ม "ย้อนกลับ" ที่เป็นไอคอนบนซ้าย */
+/* ถ้าต้องการเพิ่ม Animation ตอนกด (Active) */
+.content > div > div:first-child[onclick]:active {
+    transform: scale(0.98); /* หดลงเล็กน้อยตอนกด */
+    color: #c9302c; /* สีส้มเข้มขึ้นตอนกด */
+}
+
+#sidebarToggle {
+    cursor: pointer;
+    font-size: 24px;
+    margin-right: 15px;
+    transition: color 0.2s;
+}
+
+#sidebarToggle:hover {
+    color: #f0f0f0; /* สีตอนเอาเมาส์ชี้ */
+}
+
+/* เพิ่ม Transition ให้ Sidebar ยืดหดนุ่มนวล */
+.sidebar {
+    transition: width 0.3s ease;
+    overflow: hidden; /* ซ่อนส่วนที่เกิน */
+    white-space: nowrap; /* ห้ามขึ้นบรรทัดใหม่ */
+}
+
+/* --- สไตล์ตอนหุบ (Collapsed State) --- */
+.sidebar.collapsed {
+    width: 60px; /* หดเหลือแค่ความกว้างไอคอน */
+}
+
+.sidebar.collapsed a {
+    text-align: center; /* จัดไอคอนให้อยู่ตรงกลาง */
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.sidebar.collapsed a span {
+    display: none; /* ซ่อนข้อความใน <span> */
+}
+
+.sidebar.collapsed a i {
+    margin-right: 0; /* เอาช่องว่างขวาของไอคอนออก */
+    font-size: 20px; /* ปรับขนาดไอคอนให้พอดี */
+}
+
+/* ปรับแต่งส่วน Logo ตอนหุบ (ถ้าต้องการ) */
+.sidebar.collapsed ~ .content {
+    /* Content จะขยายเต็มพื้นที่เองเพราะใช้ Flexbox อยู่แล้ว */
+}
+
+
+/* =========================================
+   ส่วนรองรับมือถือและแท็บเล็ต (Responsive)
+   ========================================= */
+@media screen and (max-width: 1024px) {
+    /* --- 1. ปรับ Sidebar ให้เป็นแบบลอยทับ (Overlay) --- */
+    .sidebar {
+        position: fixed;
+        height: 100vh;
+        z-index: 9999;
+        box-shadow: 4px 0 15px rgba(0,0,0,0.3);
+    }
+    
+    /* บนมือถือ: ถ้ามี class collapsed คือ "ซ่อนมิด" (width: 0) */
+    .sidebar.collapsed {
+        width: 0;
+        padding: 0;
+        overflow: hidden;
+    }
+
+    /* ปรับ Content ให้เต็มจอเสมอ ไม่ว่าจะหุบหรือกางเมนู */
+    .content {
+        width: 100%; 
+        padding: 15px; /* ลดขอบให้น้อยลง */
+        overflow-x: hidden; /* ป้องกันจอเลื่อนซ้ายขวา */
+    }
+
+    /* --- 2. ปรับฟอร์ม (Form) ให้เรียงแนวตั้ง --- */
+    .form-row {
+        flex-direction: column; /* เรียงลงมาแนวตั้ง */
+        gap: 15px;
+    }
+
+    .form-group, 
+    .input-icon-group {
+        width: 100% !important; /* บังคับให้กว้างเต็มจอ */
+        min-width: 0;
+    }
+    
+    .form-group input, 
+    .form-group select, 
+    .input-icon-group input {
+        width: 100%; /* ช่องกรอกข้อมูลเต็มจอ */
+    }
+
+    /* จัดกลุ่มเวลา (ถ้ามี) ให้ยังอยู่คู่กัน หรือแยกก็ได้ */
+    .time-group {
+        flex-direction: column;
+    }
+
+    /* --- 3. ปรับตาราง (Table) ให้เลื่อนซ้ายขวาได้ --- */
+    /* ใส่ Scrollbar แนวนอนให้ตารางถ้ายาวเกินจอ */
+    .data-table, 
+    .attendance-table,
+    .activity-table {
+        display: block;
+        width: 100%;
+        overflow-x: auto; /* เลื่อนแนวนอนได้ */
+        white-space: nowrap; /* ห้ามตัดคำ เพื่อให้ตารางไม่บีบ */
+    }
+
+    /* --- 4. ปรับตัวกรอง (Filters) ด้านบน --- */
+    .filter-controls, .controls-row {
+        flex-direction: column;
+        align-items: stretch; /* ยืดเต็มความกว้าง */
+        gap: 10px;
+    }
+
+    .filter-controls select, 
+    .filter-controls input, 
+    .search-box,
+    .date-controls {
+        width: 100%;
+        margin: 0;
+        justify-content: space-between;
+    }
+
+    /* --- 5. ปรับหน้าหลัก (Grid เมนู) --- */
+    .function-grid {
+        grid-template-columns: 1fr; /* เหลือ 1 คอลัมน์ */
+        gap: 15px;
+    }
+
+    /* --- 6. อื่นๆ --- */
+    .page-title {
+        font-size: 22px; /* ลดขนาดหัวข้อ */
+    }
+
+    .modal-dialog {
+        width: 90%; /* Popup เต็มจอมากขึ้น */
+    }
+
+    /* ปรับปุ่มด้านบนขวาให้ไม่เบียด */
+    .content > div:first-child {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    #exportExcelBtn {
+        width: 100% !important; /* ปุ่ม Excel เต็มจอ */
+        justify-content: center;
+    }
+}

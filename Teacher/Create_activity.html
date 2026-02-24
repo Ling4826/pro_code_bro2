@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="th">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>สร้างกิจกรรม - PBNTC Activity System</title>
+        <link rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+        <link rel="stylesheet" href="../CSS/style.css">
+        <script
+            src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        <script src="JavaScript//Create_activity.js"></script>
+
+        <link rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.js"></script>
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/l10n/th.js"></script>
+        <script src="JavaScript/auth_guard.js"></script>
+        <style>
+        /* CSS เฉพาะสำหรับหน้านี้ */
+        .form-row {
+            display: flex;
+            align-items: flex-start; /* เปลี่ยนจาก center เป็น flex-start เพื่อให้ทุกกล่องชิดขอบบนเท่ากัน */
+            margin-bottom: 25px;
+            gap: 20px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-width: 250px;
+        }
+       /* กำหนดความสูง Input ให้เท่ากันแน่นอน ทั้งช่องปกติและช่องที่มีไอคอน */
+        .form-group input, .form-group select {
+            padding: 10px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+            width: 100%;
+            height: 45px; /* เพิ่มบรรทัดนี้: ล็อคความสูงให้เท่ากันทุกช่อง */
+        }
+        .required::before {
+            content: '*';
+            color: #d9534f;
+            margin-right: 5px;
+        }
+        .create-button {
+            background-color: #5bc0de;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 4px;
+            font-size: 18px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        /* ปรับแต่งกลุ่มที่มีไอคอนให้ขยายเต็มพื้นที่ */
+        .input-icon-group {
+            position: relative;
+            width: 100%;
+            display: block; /* ตรวจสอบว่าเป็น block หรือ flex เพื่อให้เต็มความกว้าง */
+        }
+        /* ให้ Input ในกลุ่มไอคอนมีความสูงเท่ากับข้างบน */
+        .input-icon-group input {
+            padding-right: 35px;
+            width: 100%;
+            height: 45px; /* ต้องเท่ากับ .form-group input ด้านบน */
+        }
+        .input-icon-group i {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #777;
+            pointer-events: none;
+            z-index: 2; /* ดันไอคอนมาข้างหน้าเผื่อโดนบัง */
+        }
+        /* --- Animation สำหรับปุ่มทั่วไปในหน้า Edit.html --- */
+
+/* 1. ปุ่ม "บันทึก" และ "ย้อนกลับ" ที่อยู่ข้างล่าง */
+.create-button {
+    /* Base styles (ปรับจากเดิม) */
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    
+    /* เพิ่ม Transition สำหรับแอนิเมชัน */
+    transition: all 0.2s ease-out; /* ทำให้การเปลี่ยนสถานะดูนุ่มนวล */
+}
+
+/* เมื่อเมาส์ชี้ที่ปุ่ม "บันทึก" หรือ "ย้อนกลับ" */
+.create-button:hover {
+    transform: translateY(-3px); /* ทำให้ปุ่มลอยขึ้นเล็กน้อย */
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2); /* เพิ่มเงาให้ดูมีมิติมากขึ้น */
+    filter: brightness(1.1); /* ทำให้สีสว่างขึ้นเล็กน้อย */
+}
+
+/* เมื่อกดปุ่ม "บันทึก" หรือ "ย้อนกลับ" (Active State) */
+.create-button:active {
+    transform: translateY(1px); /* ทำให้ปุ่มจมลงไปเล็กน้อย */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* ลดเงาให้ดูเหมือนถูกกด */
+    filter: brightness(0.9); /* ทำให้สีเข้มขึ้นเล็กน้อย */
+}
+
+
+/* 2. ปุ่ม "บันทึกเป็น Excel" ด้านบนขวา */
+#exportExcelBtn {
+    /* ใช้ Base styles ของ .create-button */
+    /* ถ้ามี CSS ซ้อนกัน ให้เพิ่ม !important */
+    /* background-color: #2ecc71;  ไม่ต้องซ้ำ */
+    margin: 0 !important; /* ทับ margin เดิม */
+    width: auto !important; /* ทับ width เดิม */
+    padding: 10px 20px !important; /* ทับ padding เดิม */
+    height: 40px !important; /* ทับ height เดิม */
+    display: flex !important; /* ทับ display เดิม */
+    align-items: center !important; /* ทับ align-items เดิม */
+    gap: 10px !important; /* ทับ gap เดิม */
+}
+
+/* เมื่อเมาส์ชี้ที่ปุ่ม "บันทึกเป็น Excel" */
+#exportExcelBtn:hover {
+    transform: translateY(-3px); /* ลอยขึ้น */
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2); /* เงาเข้มขึ้น */
+    filter: brightness(1.1); /* สว่างขึ้น */
+}
+
+/* เมื่อกดปุ่ม "บันทึกเป็น Excel" */
+#exportExcelBtn:active {
+    transform: translateY(1px); /* จมลง */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* เงาลดลง */
+    filter: brightness(0.9); /* เข้มขึ้น */
+}
+
+/* --- Animation สำหรับปุ่ม "ย้อนกลับ" ที่เป็นไอคอนบนซ้าย --- */
+
+/* ส่วนนี้คุณมีอยู่แล้ว แต่ถ้าอยากเพิ่ม effect ตอนกด ก็ใส่ .active เข้าไป */
+.content > div > div:first-child[onclick]:hover { /* ตัวที่ครอบลูกศรและหัวข้อ */
+    color: #d9534f; /* เปลี่ยนสีเป็นส้ม */
+    transform: scale(1.02); /* ขยายเล็กน้อย */
+}
+.content > div > div:first-child[onclick]:active {
+    transform: scale(0.98); /* หดลงเล็กน้อยตอนกด */
+    color: #c9302c; /* สีส้มเข้มขึ้นตอนกด */
+}
+/* =========================================
+   ส่วนรองรับมือถือ (Mobile Responsive)
+   ก๊อปปี้ไปใส่ใน Create_activity.html และ Overview_activity.html
+   ========================================= */
+@media screen and (max-width: 1024px) {
+    /* 1. ปรับฟอร์มให้เรียงแนวตั้ง (สำหรับหน้า Create) */
+    .form-row, .controls-row {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch; /* ให้ขยายเต็มความกว้าง */
+    }
+
+    .form-group, .input-icon-group, .date-controls, .export-button {
+        width: 100% !important;
+        min-width: unset; /* ยกเลิกการจำกัดความกว้างขั้นต่ำ */
+    }
+    
+    .date-controls {
+        flex-direction: column; /* เรียงตัวเลือกวันที่ลงมาแนวตั้ง */
+        align-items: stretch;
+    }
+
+    /* 2. ปรับตารางให้เลื่อนซ้ายขวาได้ (สำคัญมากสำหรับหน้า Overview) */
+    .activity-table, .data-table {
+        display: block;
+        width: 100%;
+        overflow-x: auto; /* อนุญาตให้เลื่อนแนวนอน */
+        white-space: nowrap; /* ห้ามตัดคำในตาราง */
+    }
+
+    /* 3. เพิ่มพื้นที่ด้านล่างให้เลื่อนสุดจอได้สะดวก */
+    .content {
+        padding-bottom: 100px !important;
+        padding-left: 15px;
+        padding-right: 15px;
+        overflow-x: hidden;
+    }
+    
+    /* 4. ปรับปุ่มกดให้เต็มจอ */
+    .create-button, .export-button {
+        width: 100%;
+        margin-top: 15px;
+        justify-content: center;
+    }
+}
+    </style>
+    </head>
+    <body>
+        <div class="header">
+            <div class="logo-area">
+                <i class="fas fa-bars" id="sidebarToggle"></i>
+
+                 <img src="../pbntc-logo.webp" alt="PBNTC Logo" class="logo">
+                PBNTC
+            </div>
+        </div>
+
+        <div class="main-container">
+              <div class="sidebar" id="sidebar">
+                <nav>
+                  <a href="Home.html"><i
+                            class="fas fa-home"></i> <span>หน้าหลัก</span></a>
+                    <a href="Create_activity.html" class="active"><i class="fas fa-edit"></i>
+                        <span>สร้างกิจกรรม</span></a>
+                    <a href="Activity_list.html"><i
+                            class="fas fa-list-alt"></i> <span>รายการกิจกรรม</span></a>
+                    <a href="Professor_Assistant.html"><i
+                            class="fas fa-building"></i>
+                        <span>ผู้ช่วยอาจารย์</span></a>
+                    <a href="Term_results_summary.html"><i
+                            class="fas fa-poll"></i> <span>สรุปผลเทอม</span></a>
+                    <a href="../index.html" class="logout"><i
+                            class="fas fa-sign-out-alt"></i>
+                        <span>ลงชื่อเข้าใช้ออก</span></a>
+                </nav>
+            </div>
+
+            <div class="content">
+                <h2 class="page-title">สร้างกิจกรรม</h2>
+
+                <form id="createActivityForm">
+                    <div class="form-row">
+                        <div class="form-group" style="width: 100%;">
+                            <label for="activityName"
+                                class="required">ชื่อสร้างกิจกรรม</label>
+                            <input type="text" id="activityName"
+                                name="activityName" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="activityDate"
+                                class="required">วันที่จัดกิจกรรม</label>
+                            <input type="text" id="activityDate"
+                                name="activityDate" required
+                                class="flatpickr-thai">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="startTime"
+                                class="required">เวลาเริ่ม</label>
+                            <div class="input-icon-group">
+                                <input type="text" id="startTime"
+                                    name="startTime" required
+                                    class="flatpickr-time"
+                                    placeholder="เลือกเวลาเริ่ม">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="endTime"
+                                class="required">เวลาสิ้นสุด</label>
+                            <div class="input-icon-group">
+                                <input type="text" id="endTime"
+                                    name="endTime" required
+                                    class="flatpickr-time"
+                                    placeholder="เลือกเวลาสิ้นสุด">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+    <div class="form-group">
+        <label for="activityType" class="required">ประเภทกิจกรรม</label>
+        <select id="activityType" name="activityType" required>
+            <option value="flag_ceremony">กิจกรรมหน้าเสาธง (เช็คชื่อเข้าแถว)</option>
+            <option value="activity">กิจกรรมทั่วไป (แผนก/วิทยาลัย)</option>
+        </select>
+    </div>
+</div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="level">ระดับ</label>
+                            <select id="level" name="level">
+                                <option value>เลือกระดับ</option>
+                                <option value="ปวช.">ปวช.</option>
+                                <option value="ปวส.">ปวส.</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="department">สาขา</label>
+                            <select id="department" name="department">
+                                <option value>เลือกสาขา</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="semester" class="required">เทอม</label>
+                            <select id="semester" name="semester" required>
+                                <option value>เลือกเทอม</option>
+                                <option value="1">เทอม 1</option>
+                                <option value="2">เทอม 2</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="studentYear">ปี</label>
+                            <select id="studentYear" name="studentYear">
+                                <option value>เลือกปี</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="studentClass">ห้อง</label>
+                            <select id="studentClass" name="studentClass">
+                                <option value>เลือกห้อง</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"
+                            style="flex-direction: row; align-items: center; width: 300px;">
+                            <label for="recurringDays"
+                                style="width: 100px; font-weight: normal; margin-right: 10px;">จัดขึ้นทุกๆ</label>
+                            <input type="number" id="recurringDays"
+                                name="recurringDays" value="0"
+                                style="width: 80px;">
+                            <span
+                                style="font-weight: bold; margin-left: 10px;">วัน</span>
+                        </div>
+                    </div>
+                    <button type="submit"
+                        class="create-button">สร้างกิจกรรม</button>
+                </form>
+
+            </div>
+        </div>
+        <script>
+      const toggleBtn = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+
+    // ฟังก์ชันตรวจสอบขนาดจอและตั้งค่าเมนู
+    function initSidebar() {
+        const isMobile = window.innerWidth <= 1024; // เช็คว่าเป็นมือถือ/ไอแพดหรือไม่
+        const savedState = localStorage.getItem('sidebarState');
+
+        if (isMobile) {
+            // บนมือถือ: เริ่มต้นต้อง "หุบ" (collapsed) เสมอ เพื่อไม่ให้บังเนื้อหา
+            sidebar.classList.add('collapsed'); 
+        } else {
+            // บนคอม: เอาตามที่เคยจำไว้ (ถ้าจำว่าหุบ ก็หุบ)
+            if (savedState === 'collapsed') {
+                sidebar.classList.add('collapsed');
+            } else {
+                sidebar.classList.remove('collapsed');
+            }
+        }
+    }
+
+    // เรียกใช้ตอนเปิดเว็บ
+    initSidebar();
+
+    // เมื่อกดปุ่ม
+    toggleBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('collapsed');
+        
+        // บันทึกสถานะ (เฉพาะตอนใช้คอม มือถือไม่ต้องจำ เพราะควรปิดเสมอตอนเริ่ม)
+        if (window.innerWidth > 1024) {
+            if (sidebar.classList.contains('collapsed')) {
+                localStorage.setItem('sidebarState', 'collapsed');
+            } else {
+                localStorage.setItem('sidebarState', 'expanded');
+            }
+        }
+    });
+
+    </script>
+
+    </body>
+</html>

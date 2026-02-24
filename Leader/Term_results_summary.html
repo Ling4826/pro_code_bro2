@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สรุปผลเทอม - PBNTC</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../CSS/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="JavaScript/auth_guard.js"></script>
+    <style>
+        /* =========================================
+           Custom CSS สำหรับหน้าสรุปผล
+           ========================================= */
+
+        /* 1. ส่วนตัวกรอง */
+        .filter-controls {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: flex-end;
+            border: 1px solid #eee;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .filter-group label {
+            font-weight: 600;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .filter-group select {
+            padding: 0 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            min-width: 120px;
+            height: 45px;
+            font-size: 14px;
+            background-color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #444;
+        }
+        
+        .filter-group select#department {
+            min-width: 180px;
+        }
+
+        .filter-group select:hover {
+            border-color: #337ab7;
+            background-color: #f9fcff;
+        }
+
+        .filter-group select:focus {
+            border-color: #d9534f;
+            box-shadow: 0 0 0 3px rgba(217, 83, 79, 0.1);
+            outline: none;
+        }
+
+        .search-input-group {
+            position: relative;
+            flex-grow: 1;
+            min-width: 200px;
+        }
+
+        .search-input-group i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            font-size: 16px;
+        }
+
+        .search-input-group input {
+            width: 100%;
+            height: 45px;
+            padding-left: 45px !important;
+            padding-right: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 15px;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        .search-input-group input:focus {
+            border-color: #d9534f;
+            box-shadow: 0 0 0 3px rgba(217, 83, 79, 0.1);
+            outline: none;
+        }
+
+        /* 2. ตารางแสดงผล */
+        .table-responsive {
+            overflow-x: auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            padding: 5px;
+        }
+
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        .summary-table thead th {
+            background-color: #d9534f;
+            color: white;
+            padding: 15px;
+            font-weight: 600;
+            text-align: center;
+            border-bottom: 2px solid #c9302c;
+        }
+
+        .summary-table thead th:first-child { border-top-left-radius: 8px; }
+        .summary-table thead th:last-child { border-top-right-radius: 8px; }
+
+        .summary-table tbody td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            color: #333;
+            text-align: center;
+        }
+        
+        .summary-table tbody td:nth-child(2),
+        .summary-table tbody td:nth-child(3),
+        .summary-table tbody td:nth-child(4) {
+            text-align: left;
+        }
+
+        .summary-table tbody tr:nth-child(even) { background-color: #f8f9fa; }
+        .summary-table tbody tr:hover { background-color: #fff3cd; transition: background-color 0.2s; }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+            min-width: 60px;
+        }
+        .status-pass { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status-fail { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+        @media screen and (max-width: 1024px) {
+            .filter-controls { flex-direction: column; align-items: stretch; }
+            .filter-group, .search-input-group { width: 100%; }
+            .filter-group select { width: 100%; }
+        }
+
+        /* =========================================
+           3. ส่วน MODAL POPUP (สำคัญ: เพิ่มส่วนนี้)
+           ========================================= */
+        .modal {
+            display: none; /* เริ่มต้นซ่อนไว้ */
+            position: fixed; 
+            z-index: 1000; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            background-color: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 800px;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close-btn:hover { color: #000; }
+
+        .modal-title {
+            font-size: 24px;
+            margin-bottom: 25px;
+            color: #333;
+        }
+
+        .cards-container {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .card-detail {
+            flex: 1;
+            min-width: 280px;
+            max-width: 350px;
+            border-radius: 15px;
+            color: white;
+            padding: 0;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-header {
+            padding: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.2);
+            text-align: center;
+        }
+
+        .card-body {
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .icon-circle {
+            width: 80px;
+            height: 80px;
+            background-color: white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 40px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .card-blue { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .card-blue .icon-circle { color: #4facfe; }
+
+        .card-red { background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%); }
+        .card-red .icon-circle { color: #ff0844; }
+
+        .stat-text { font-size: 16px; margin: 5px 0; }
+        .summary-text { font-size: 20px; font-weight: bold; margin-top: 10px; }
+
+        /* =========================================
+   Mobile Fix: ปรับ Popup ให้สวยบนมือถือ
+   (ก๊อปปี้ไปใส่ต่อท้ายใน <style> ของ Term_results_summary.html)
+   ========================================= */
+@media screen and (max-width: 768px) {
+    /* 1. ปรับ Modal ให้เกือบเต็มจอ และลดขอบ */
+    .modal-content {
+        width: 95%;        /* ขยายให้กว้างขึ้น */
+        padding: 20px 10px; /* ลดขอบซ้ายขวาลงเพื่อให้มีที่วางการ์ด */
+        margin: 10px auto;
+        max-height: 90vh;  /* กันไม่ให้ยาวเกินจอ */
+        overflow-y: auto;  /* ถ้าเนื้อหายาว ให้เลื่อนขึ้นลงได้ */
+    }
+
+    /* 2. บังคับให้การ์ดเรียงแนวตั้ง และขยายเต็มความกว้าง */
+    .cards-container {
+        flex-direction: column; /* เรียงบนล่าง */
+        align-items: center;
+        gap: 20px;
+    }
+
+    .card-detail {
+        width: 100%;       /* ขยายเต็มกรอบ */
+        min-width: auto;   /* ยกเลิกความกว้างขั้นต่ำ */
+        max-width: 100%;
+    }
+
+    /* 3. ลดขนาดไอคอนและตัวหนังสือเล็กน้อยเพื่อประหยัดที่ */
+    .icon-circle {
+        width: 60px;
+        height: 60px;
+        font-size: 30px;
+    }
+
+    .card-body {
+        padding: 20px 15px;
+    }
+
+    .modal-title {
+        font-size: 20px;
+        margin-bottom: 15px;
+    }
+}
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="logo-area">
+            <i class="fas fa-bars" id="sidebarToggle"></i>
+            <img src="../pbntc-logo.webp" alt="PBNTC Logo" class="logo">
+            PBNTC
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar" id="sidebar">
+            <nav>
+                <a href="Home.html"><i class="fas fa-home"></i> <span>หน้าหลัก</span></a>
+                <a href="Activity_list.html"><i class="fas fa-list-alt"></i> <span>รายการกิจกรรม</span></a>
+                <a href="Term_results_summary.html" class="active"><i class="fas fa-poll"></i> <span>สรุปผลเทอม</span></a>
+                <a href="../index.html" class="logout"><i class="fas fa-sign-out-alt"></i> <span>ลงชื่อเข้าใช้ออก</span></a>
+            </nav>
+        </div>
+
+        <div class="content">
+            <h2 class="page-title">สรุปผลการประเมินรายเทอม</h2>
+
+            <div class="filter-controls">
+                <div class="search-input-group">
+                    <input type="text" id="searchInput" placeholder="ค้นหาชื่อนักเรียน..." >
+                    <i class="fas fa-search"></i>
+                </div>
+                <div class="filter-group">
+                    <label for="level">ระดับ</label>
+                    <select id="level" disabled>
+                        <option value>ทั้งหมด</option>
+                        <option value="ปวช.">ปวช.</option>
+                        <option value="ปวส.">ปวส.</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="studentYear">ชั้นปี</label>
+                    <select id="studentYear" disabled><option value>ทั้งหมด</option></select>
+                </div>
+                <div class="filter-group">
+                    <label for="department">สาขาวิชา</label>
+                    <select id="department" disabled><option value>ทั้งหมด</option></select>
+                </div>
+                <div class="filter-group">
+                    <label for="classNumber">ห้อง</label>
+                    <select id="classNumber" disabled><option value>ทั้งหมด</option></select>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>รหัสนักเรียน</th>
+                            <th>ชื่อ - นามสกุล</th>
+                            <th>สาขาวิชา</th>
+                            <th>ชั้นปี</th>
+                            <th>ห้อง</th>
+                            <th>เข้าแถว (%)</th> 
+                            <th>กิจกรรม (%)</th> 
+                            <th>ผลการประเมิน</th>
+                        </tr>
+                    </thead>
+                    <tbody id="score-body">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="studentModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeStudentModal()">&times;</span>
+            <h2 class="modal-title">รายละเอียด: <span id="modalStudentName" style="color: #d9534f;">-</span></h2>
+            
+            <div class="cards-container">
+                
+                <div id="flagCard" class="card-detail card-blue">
+                    <div class="card-header">เข้าแถวหน้าเสาธง</div>
+                    <div class="card-body">
+                        <div class="icon-circle">
+                            <i id="flagIcon" class="fas fa-check"></i>
+                        </div>
+                        <p class="stat-text">มีทั้งหมด <span id="flagTotal">-</span></p>
+                        <p class="stat-text">เข้าร่วม <span id="flagAttended">-</span></p>
+                        <p class="summary-text">สรุปเข้าร่วมไป <span id="flagPercent">-</span></p>
+                    </div>
+                </div>
+
+                <div id="deptCard" class="card-detail card-red">
+                    <div class="card-header">กิจกรรมแผนก</div>
+                    <div class="card-body">
+                        <div class="icon-circle">
+                            <i id="deptIcon" class="fas fa-times"></i>
+                        </div>
+                        <p class="stat-text">มีทั้งหมด <span id="deptTotal">-</span></p>
+                        <p class="stat-text">เข้าร่วม <span id="deptAttended">-</span></p>
+                        <p class="summary-text">สรุปเข้าร่วมไป <span id="deptPercent">-</span></p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <script>
+        const toggleBtn = document.getElementById('sidebarToggle');
+        const sidebar = document.getElementById('sidebar');
+
+        function initSidebar() {
+            const isMobile = window.innerWidth <= 1024;
+            const savedState = localStorage.getItem('sidebarState');
+            if (isMobile) {
+                sidebar.classList.add('collapsed');
+            } else {
+                if (savedState === 'collapsed') {
+                    sidebar.classList.add('collapsed');
+                } else {
+                    sidebar.classList.remove('collapsed');
+                }
+            }
+        }
+        initSidebar();
+
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+            if (window.innerWidth > 1024) {
+                if (sidebar.classList.contains('collapsed')) {
+                    localStorage.setItem('sidebarState', 'collapsed');
+                } else {
+                    localStorage.setItem('sidebarState', 'expanded');
+                }
+            }
+        });
+    </script>
+
+    <script src="JavaScript/Term_result_summary.js"></script>
+</body>
+</html>

@@ -1,0 +1,475 @@
+/* ตั้งค่าพื้นฐาน */
+body {
+    margin: 0;
+    font-family: Tahoma, sans-serif;
+    background-color: #f4f4f4;
+}
+
+/* Header (แถบด้านบนสีส้ม) */
+.header {
+    background-color: #d9534f; /* สีส้มอมแดง */
+    color: white;
+    padding: 10px 20px;
+    height: 60px; /* กำหนดความสูงเพื่อให้ logo อยู่ในระดับเดียวกับ sidebar */
+    box-sizing: border-box;
+}
+
+.logo-area {
+    font-size: 24px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+}
+
+.logo {
+    width: 40px;
+    height: 40px;
+    margin-right: 10px;
+    border-radius: 50%;
+    /* คุณควรเปลี่ยน URL รูปภาพตรงนี้ให้เป็นโลโก้จริง */
+}
+
+/* โครงสร้างหลัก (Sidebar + Content) */
+.main-container {
+    display: flex;
+    min-height: calc(100vh - 60px); /* ความสูงเต็มจอ ลบด้วยความสูง Header */
+}
+
+/* Sidebar (แถบเมนูด้านซ้ายสีดำ) */
+.sidebar {
+    width: 200px;
+    background-color: #333; /* สีดำ/เทาเข้ม */
+    color: white;
+    padding-top: 20px;
+    flex-shrink: 0;
+}
+
+.sidebar a {
+    display: block;
+    color: #ccc;
+    padding: 15px 20px;
+    text-decoration: none;
+    border-left: 5px solid transparent;
+    transition: all 0.2s;
+}
+
+.sidebar a:hover {
+    color: white;
+    background-color: #444;
+}
+
+.sidebar a.active {
+    color: white;
+    background-color: #444;
+    border-left-color: #d9534f; /* แถบสีส้มด้านซ้าย */
+}
+
+.sidebar a i {
+    margin-right: 10px;
+    width: 20px; /* จัดให้ไอคอนจัดเรียงตรงกัน */
+}
+
+/* Content (พื้นที่เนื้อหาหลัก) */
+.content {
+    flex-grow: 1;
+    padding: 40px;
+    background-color: white;
+}
+
+/* ส่วนแสดงเวลา */
+.time-display {
+    text-align: center;
+    font-size: 18px;
+    color: #666;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+/* Function Grid (บล็อกฟังก์ชัน) */
+.function-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 คอลัมน์ */
+    gap: 30px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+/* Function Block (บล็อกกิจกรรมแต่ละอัน) */
+.function-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 180px;
+    text-align: center;
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.function-block:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.function-block i {
+    font-size: 60px;
+    margin-bottom: 15px;
+}
+
+/* --- Styles for Confirmation Dialog (Modal) --- */
+
+/* พื้นหลังมืดและกำหนดให้ Dialog อยู่ตรงกลาง */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* พื้นหลังสีดำโปร่งแสง */
+    display: flex; 
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; 
+}
+
+/* ตัว Modal หลัก */
+.modal-dialog {
+    background-color: white;
+    border-radius: 4px;
+    width: 450px; 
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+/* ส่วนหัว (สีส้ม) */
+.modal-header {
+    background-color: #f0ad4e; /* สีส้ม */
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.modal-header h3 {
+    margin: 0;
+}
+
+.modal-header .close-btn {
+    font-size: 24px;
+    cursor: pointer;
+    line-height: 1;
+}
+
+/* ส่วนเนื้อหา */
+.modal-body {
+    padding: 30px 20px;
+    text-align: center;
+    font-size: 16px;
+    color: #333;
+}
+
+.modal-body #activityToDeleteName {
+    color: #d9534f; /* เน้นชื่อกิจกรรมด้วยสีแดง */
+    font-weight: bold;
+}
+
+/* ส่วนท้าย (ปุ่ม) */
+.modal-footer {
+    padding: 15px 20px;
+    text-align: right;
+    display: flex;
+    justify-content: center; 
+    gap: 20px;
+}
+
+/* 📌 Styles สำหรับปุ่ม (จำเป็นมากเพื่อให้ปุ่มมีสี) */
+.btn {
+    padding: 10px 25px;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-weight: bold;
+}
+
+.btn-cancel {
+    background-color: #5bc0de; /* สีฟ้า */
+    color: white;
+}
+
+.btn-confirm {
+    background-color: #d9534f; /* สีแดง */
+    color: white;
+}
+
+/* กำหนดสีตามภาพตัวอย่าง */
+.function-block.blue { background-color: #337ab7; } /* สร้างกิจกรรม - สีฟ้า */
+.function-block.red { background-color: #d9534f; }    /* แก้ไข / ลบกิจกรรม */
+.function-block.green { background-color: #5cb85c; }  /* ตรวจสอบกิจกรรม - สีเขียว */
+.function-block.orange { background-color: #f0ad4e; } /* ข้อมูลสาขา */
+.function-block.purple { background-color: #673ab7; } /* สรุปผลเทอม */
+
+
+/* *** START: CSS สำหรับหน้าตาราง (สรุปผลและข้อมูลสาขา) ***
+*/
+
+.page-title { /* ใช้แทน .content-header */
+    font-size: 26px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: #333; /* ใช้สีเข้มมาตรฐานของธีมหลัก */
+}
+
+/* สไตล์พื้นฐานของตาราง */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    text-align: left;
+}
+
+.data-table th, .data-table td {
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    font-size: 15px;
+}
+
+.data-table th {
+    background-color: #f2f2f2;
+    color: #333;
+    font-weight: 600;
+    text-align: center;
+    border-bottom: 2px solid #ccc;
+}
+
+.data-table tr:nth-child(even) {
+    background-color: #f7f7f7;
+}
+
+/* สไตล์สำหรับปุ่ม/ผลลัพธ์ในตาราง */
+.pass { color: #5cb85c; font-weight: 600; } /* เขียว */
+.fail { color: #d9534f; font-weight: 600; } /* แดง */
+.role-select { width: 120px; padding: 5px; border-radius: 4px; } /* สำหรับ Department_information.html */
+
+/* สไตล์สำหรับ Filter / Search */
+.filter-controls {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    align-items: center;
+}
+
+.filter-controls input[type="text"], 
+.filter-controls select {
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 15px;
+    box-sizing: border-box;
+}
+
+.search-box {
+    position: relative;
+    flex: 1; /* ให้กล่องค้นหากินพื้นที่มากที่สุด */
+}
+
+.search-box input {
+    width: 100%;
+    padding-left: 35px; /* เว้นที่ให้ไอคอน */
+}
+
+.search-box i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #777;
+}
+
+.filter-controls label {
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.activity-card {
+    /* ... โค้ดเดิม ... */
+    padding: 25px; 
+}
+
+.card-detail {
+    font-size: 1em;
+    line-height: 1.4; 
+    /* 💡 เพิ่ม Margin ล่างเพื่อเว้นระยะห่างระหว่างบรรทัด */
+    margin-bottom: 1px; 
+    /* 💡 อาจจะเพิ่ม Padding ด้านบนเล็กน้อยให้ดูสบายตาขึ้น */
+    /* padding-top: 2px; */
+}
+
+/* 💡 แก้ไข: เพื่อให้กลุ่มหัวข้อหลัก (วันที่/เวลา/สาขา/ระดับ) ดูแยกจากกัน */
+/* ทำให้บรรทัดสุดท้ายของแต่ละกลุ่มมีระยะห่างที่มากขึ้น */
+.card-detail:nth-child(3), /* วันที่ */
+.card-detail:nth-child(5), /* เวลา */ 
+.card-detail:nth-child(7), /* ระดับ */
+.card-detail:nth-child(9) { /* ชั้นปี/ห้อง */
+    /* อาจจะเพิ่ม margin-bottom พิเศษเพื่อแบ่งกลุ่ม */
+    margin-bottom: 8px; 
+}
+/* *** END: CSS สำหรับหน้าตาราง (สรุปผลและข้อมูลสาขา) ***
+*/
+
+#sidebarToggle {
+    cursor: pointer;
+    font-size: 24px;
+    margin-right: 15px;
+    transition: color 0.2s;
+}
+
+#sidebarToggle:hover {
+    color: #f0f0f0; /* สีตอนเอาเมาส์ชี้ */
+}
+
+/* เพิ่ม Transition ให้ Sidebar ยืดหดนุ่มนวล */
+.sidebar {
+    transition: width 0.3s ease;
+    overflow: hidden; /* ซ่อนส่วนที่เกิน */
+    white-space: nowrap; /* ห้ามขึ้นบรรทัดใหม่ */
+}
+
+/* --- สไตล์ตอนหุบ (Collapsed State) --- */
+.sidebar.collapsed {
+    width: 60px; /* หดเหลือแค่ความกว้างไอคอน */
+}
+
+.sidebar.collapsed a {
+    text-align: center; /* จัดไอคอนให้อยู่ตรงกลาง */
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.sidebar.collapsed a span {
+    display: none; /* ซ่อนข้อความใน <span> */
+}
+
+.sidebar.collapsed a i {
+    margin-right: 0; /* เอาช่องว่างขวาของไอคอนออก */
+    font-size: 20px; /* ปรับขนาดไอคอนให้พอดี */
+}
+
+/* ปรับแต่งส่วน Logo ตอนหุบ (ถ้าต้องการ) */
+.sidebar.collapsed ~ .content {
+    /* Content จะขยายเต็มพื้นที่เองเพราะใช้ Flexbox อยู่แล้ว */
+}
+
+/* =========================================
+   ส่วนรองรับมือถือและแท็บเล็ต (Responsive)
+   ========================================= */
+@media screen and (max-width: 1024px) {
+    /* --- 1. ปรับ Sidebar ให้เป็นแบบลอยทับ (Overlay) --- */
+    .sidebar {
+        position: fixed;
+        height: 100vh;
+        z-index: 9999;
+        box-shadow: 4px 0 15px rgba(0,0,0,0.3);
+    }
+    
+    /* บนมือถือ: ถ้ามี class collapsed คือ "ซ่อนมิด" (width: 0) */
+    .sidebar.collapsed {
+        width: 0;
+        padding: 0;
+        overflow: hidden;
+    }
+
+    /* ปรับ Content ให้เต็มจอเสมอ ไม่ว่าจะหุบหรือกางเมนู */
+    .content {
+        width: 100%; 
+        padding: 15px; /* ลดขอบให้น้อยลง */
+        overflow-x: hidden; /* ป้องกันจอเลื่อนซ้ายขวา */
+    }
+
+    /* --- 2. ปรับฟอร์ม (Form) ให้เรียงแนวตั้ง --- */
+    .form-row {
+        flex-direction: column; /* เรียงลงมาแนวตั้ง */
+        gap: 15px;
+    }
+
+    .form-group, 
+    .input-icon-group {
+        width: 100% !important; /* บังคับให้กว้างเต็มจอ */
+        min-width: 0;
+    }
+    
+    .form-group input, 
+    .form-group select, 
+    .input-icon-group input {
+        width: 100%; /* ช่องกรอกข้อมูลเต็มจอ */
+    }
+
+    /* จัดกลุ่มเวลา (ถ้ามี) ให้ยังอยู่คู่กัน หรือแยกก็ได้ */
+    .time-group {
+        flex-direction: column;
+    }
+
+    /* --- 3. ปรับตาราง (Table) ให้เลื่อนซ้ายขวาได้ --- */
+    /* ใส่ Scrollbar แนวนอนให้ตารางถ้ายาวเกินจอ */
+    .data-table, 
+    .attendance-table,
+    .activity-table {
+        display: block;
+        width: 100%;
+        overflow-x: auto; /* เลื่อนแนวนอนได้ */
+        white-space: nowrap; /* ห้ามตัดคำ เพื่อให้ตารางไม่บีบ */
+    }
+
+    /* --- 4. ปรับตัวกรอง (Filters) ด้านบน --- */
+    .filter-controls, .controls-row {
+        flex-direction: column;
+        align-items: stretch; /* ยืดเต็มความกว้าง */
+        gap: 10px;
+    }
+
+    .filter-controls select, 
+    .filter-controls input, 
+    .search-box,
+    .date-controls {
+        width: 100%;
+        margin: 0;
+        justify-content: space-between;
+    }
+
+    /* --- 5. ปรับหน้าหลัก (Grid เมนู) --- */
+    .function-grid {
+        grid-template-columns: 1fr; /* เหลือ 1 คอลัมน์ */
+        gap: 15px;
+    }
+
+    /* --- 6. อื่นๆ --- */
+    .page-title {
+        font-size: 22px; /* ลดขนาดหัวข้อ */
+    }
+
+    .modal-dialog {
+        width: 90%; /* Popup เต็มจอมากขึ้น */
+    }
+
+    /* ปรับปุ่มด้านบนขวาให้ไม่เบียด */
+    .content > div:first-child {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    #exportExcelBtn {
+        width: 100% !important; /* ปุ่ม Excel เต็มจอ */
+        justify-content: center;
+    }
+}

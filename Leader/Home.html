@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="th">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>หน้าหลัก - PBNTC Activity System</title>
+        <link rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+        <link rel="stylesheet" href="../CSS/style.css">
+        <script src="JavaScript/auth_guard.js"></script>
+    </head>
+
+    <body>
+
+        <div class="header">
+            <div class="logo-area">
+                <i class="fas fa-bars" id="sidebarToggle"></i>
+                <img src="../pbntc-logo.webp" alt="PBNTC Logo" class="logo">
+                PBNTC
+            </div>
+        </div>
+
+        <div class="main-container">
+
+            <div class="sidebar" id="sidebar">
+                <nav>
+                    <a href="Home.html" class="active"><i
+                            class="fas fa-home"></i> <span>หน้าหลัก</span></a>
+                    <a href="Activity_list.html"><i
+                            class="fas fa-list-alt"></i> <span>รายการกิจกรรม</span></a>
+                    <a href="Term_results_summary.html"><i
+                            class="fas fa-poll"></i> <span>สรุปผลเทอม</span></a>
+                   <a href="../index.html" class="logout"><i
+                            class="fas fa-sign-out-alt"></i>
+                        <span>ลงชื่อเข้าใช้ออก</span></a>
+                </nav>
+            </div>
+
+            <div class="content">
+                <div class="time-display" id="realTimeDisplay">
+                    กำลังโหลดเวลา...
+                </div>
+
+                <div class="function-grid">
+
+                    <a href="Activity_list.html"
+                        class="function-block red">
+                        <i class="fas fa-edit"></i>
+                        <span>รายการกิจกรรม</span>
+                    </a>
+
+                    <a href="Term_results_summary.html"
+                        class="function-block purple">
+                        <i class="fas fa-poll"></i>
+                        <span>สรุปผลเทอม</span>
+                    </a>
+                </div>
+            </div> </div> <script>
+       const toggleBtn = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+
+    // ฟังก์ชันตรวจสอบขนาดจอและตั้งค่าเมนู
+    function initSidebar() {
+        const isMobile = window.innerWidth <= 1024; // เช็คว่าเป็นมือถือ/ไอแพดหรือไม่
+        const savedState = localStorage.getItem('sidebarState');
+
+        if (isMobile) {
+            // บนมือถือ: เริ่มต้นต้อง "หุบ" (collapsed) เสมอ เพื่อไม่ให้บังเนื้อหา
+            sidebar.classList.add('collapsed'); 
+        } else {
+            // บนคอม: เอาตามที่เคยจำไว้ (ถ้าจำว่าหุบ ก็หุบ)
+            if (savedState === 'collapsed') {
+                sidebar.classList.add('collapsed');
+            } else {
+                sidebar.classList.remove('collapsed');
+            }
+        }
+    }
+
+    // เรียกใช้ตอนเปิดเว็บ
+    initSidebar();
+
+    // เมื่อกดปุ่ม
+    toggleBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('collapsed');
+        
+        // บันทึกสถานะ (เฉพาะตอนใช้คอม มือถือไม่ต้องจำ เพราะควรปิดเสมอตอนเริ่ม)
+        if (window.innerWidth > 1024) {
+            if (sidebar.classList.contains('collapsed')) {
+                localStorage.setItem('sidebarState', 'collapsed');
+            } else {
+                localStorage.setItem('sidebarState', 'expanded');
+            }
+        }
+    });
+
+        // --- ส่วนนาฬิกาเดิน (โค้ดใหม่ที่เพิ่ม) ---
+        function updateClock() {
+            const now = new Date();
+            
+            // กำหนดชื่อวันและเดือนภาษาไทย
+            const days = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+            const months = [
+                'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+                'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+            ];
+
+            const dayName = days[now.getDay()];
+            const date = now.getDate();
+            const monthName = months[now.getMonth()];
+            const year = now.getFullYear() + 543; // แปลง ค.ศ. เป็น พ.ศ.
+            
+            // ดึงเวลาและเติมเลข 0 ข้างหน้าถ้าต่ำกว่า 10 (เช่น 09:05:01)
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+
+            // ประกอบข้อความ
+            const timeString = `วัน ${dayName} ที่ ${date} เดือน ${monthName} พ.ศ. ${year} เวลา ${hours}:${minutes}:${seconds}`;
+
+            // นำไปแสดงที่หน้าจอ
+            document.getElementById('realTimeDisplay').innerText = timeString;
+        }
+
+        // สั่งให้ฟังก์ชันทำงานทุกๆ 1 วินาที (1000 ms)
+        setInterval(updateClock, 1000);
+        
+        // เรียกทำงานครั้งแรกทันที ไม่ต้องรอ 1 วิ
+        updateClock();
+
+        // ตัวอย่าง: ใส่ใน script ของหน้า Home.html
+document.addEventListener('DOMContentLoaded', () => {
+    // ดึงชื่อที่เก็บไว้
+    const name = sessionStorage.getItem('user_name');
+    const role = sessionStorage.getItem('user_role');
+
+    // ถ้ามีชื่อ ให้เอาไปใส่ใน element ที่ต้องการ
+    if (name) {
+        // สมมติใน HTML มี <span id="userNameDisplay"></span>
+        const displayEl = document.getElementById('userNameDisplay');
+        if (displayEl) displayEl.innerText = name;
+    }
+});
+    </script>
+    </body>
+</html>

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ภาพรวมกิจกรรม - PBNTC Activity System</title>
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-solid-900.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../CSS/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="JavaScript/Overview_activity.js"></script>
+    <script src="JavaScript/auth_guard.js"></script>
+    <style>
+        /* CSS เฉพาะสำหรับหน้านี้ */
+        .controls-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 25px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .date-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 16px;
+        }
+
+        .date-controls select, .date-controls input {
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            min-width: 80px;
+        }
+
+        .export-button {
+            background-color: #5bc0de; /* สีฟ้า */
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+        }
+
+        .export-button:hover {
+            background-color: #46b8da;
+        }
+
+        .export-button i {
+            margin-left: 8px;
+        }
+
+        /* ตารางแสดงผลกิจกรรม */
+        .activity-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 15px;
+        }
+
+        .activity-table th, .activity-table td {
+            border: 1px solid #ddd;
+            padding: 12px 10px;
+            text-align: left;
+        }
+
+        .activity-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .activity-table tr:nth-child(odd) {
+            background-color: #f9f9f9;
+        }
+
+        /* สไตล์คอลัมน์สถานะเช็กชื่อ */
+        .status-cell {
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .status-cell .checked {
+            color: #5cb85c; /* เขียว */
+        }
+
+        .status-cell .partial {
+            color: #f0ad4e; /* ส้ม/เหลือง */
+        }
+
+        .status-cell .unchecked {
+            color: #d9534f; /* แดง */
+        }
+
+        .status-icon {
+            margin-right: 5px;
+            font-size: 18px;
+        }
+        /* =========================================
+   ส่วนรองรับมือถือ (Mobile Responsive)
+   ก๊อปปี้ไปใส่ใน Create_activity.html และ Overview_activity.html
+   ========================================= */
+@media screen and (max-width: 1024px) {
+    /* 1. ปรับฟอร์มให้เรียงแนวตั้ง (สำหรับหน้า Create) */
+    .form-row, .controls-row {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch; /* ให้ขยายเต็มความกว้าง */
+    }
+
+    .form-group, .input-icon-group, .date-controls, .export-button {
+        width: 100% !important;
+        min-width: unset; /* ยกเลิกการจำกัดความกว้างขั้นต่ำ */
+    }
+    
+    .date-controls {
+        flex-direction: column; /* เรียงตัวเลือกวันที่ลงมาแนวตั้ง */
+        align-items: stretch;
+    }
+
+    /* 2. ปรับตารางให้เลื่อนซ้ายขวาได้ (สำคัญมากสำหรับหน้า Overview) */
+    .activity-table, .data-table {
+        display: block;
+        width: 100%;
+        overflow-x: auto; /* อนุญาตให้เลื่อนแนวนอน */
+        white-space: nowrap; /* ห้ามตัดคำในตาราง */
+    }
+
+    /* 3. เพิ่มพื้นที่ด้านล่างให้เลื่อนสุดจอได้สะดวก */
+    .content {
+        padding-bottom: 100px !important;
+        padding-left: 15px;
+        padding-right: 15px;
+        overflow-x: hidden;
+    }
+    
+    /* 4. ปรับปุ่มกดให้เต็มจอ */
+    .create-button, .export-button {
+        width: 100%;
+        margin-top: 15px;
+        justify-content: center;
+    }
+}
+    </style>
+</head>
+<body>
+     <div class="header">
+            <div class="logo-area">
+                <i class="fas fa-bars" id="sidebarToggle"></i>
+
+                 <img src="../pbntc-logo.webp" alt="PBNTC Logo" class="logo">
+                PBNTC
+            </div>
+        </div>
+
+        <div class="main-container">
+               <div class="sidebar" id="sidebar">
+                <nav>
+                    <a href="Home.html"><i
+                            class="fas fa-home"></i> <span>หน้าหลัก</span></a>
+                    <a href="Create_activity.html"><i class="fas fa-edit"></i>
+                        <span>สร้างกิจกรรม</span></a>
+                    <a href="Activity_list.html"><i
+                            class="fas fa-list-alt"></i> <span>รายการกิจกรรม</span></a>
+                    <a href="Overview_activity.html" class="active"><i
+                            class="fas fa-clipboard-check"></i>
+                        <span>ภาพรวมกิจกรรม</span></a>
+                    <a href="Professor_Assistant.html"><i
+                            class="fas fa-building"></i>
+                        <span>ผู้ช่วยอาจารย์</span></a>
+                    <a href="Term_results_summary.html"><i
+                            class="fas fa-poll"></i> <span>สรุปผลเทอม</span></a>
+                    <a href="../index.html" class="logout"><i
+                            class="fas fa-sign-out-alt"></i>
+                        <span>ลงชื่อเข้าใช้ออก</span></a>
+                </nav>
+            </div>
+
+        <div class="content">
+            <h2 class="page-title">ภาพรวมกิจกรรม</h2>
+            
+            <div class="controls-row">
+                <div class="date-controls">
+                    <label for="daySelect">วันที่</label>
+                    <select id="daySelect">
+                    </select>
+                    
+                    <label for="monthSelect">เดือน</label>
+                    <select id="monthSelect">
+                    </select>
+
+                    <label for="yearSelect">ปี</label>
+                    <select id="yearSelect">
+                    </select>
+                </div>
+                
+               
+            </div>
+
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>กิจกรรม</th>
+                        <th>วันที่</th>
+                        <th>เวลา</th>
+                        <th>สาขา</th>
+                        <th>ระดับ</th>
+                        <th>ชั้นปี</th>
+                        <th>ห้อง</th>
+                        <th class="status-cell">สถานะเช็กชื่อ</th>
+                        <th>สรุป</th>
+                    </tr>
+                </thead>
+                <tbody id="activityCheckTableBody">
+                    <!-- กิจกรรมจะถูกโหลดที่นี่โดย JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script>
+       const toggleBtn = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+
+    // ฟังก์ชันตรวจสอบขนาดจอและตั้งค่าเมนู
+    function initSidebar() {
+        const isMobile = window.innerWidth <= 1024; // เช็คว่าเป็นมือถือ/ไอแพดหรือไม่
+        const savedState = localStorage.getItem('sidebarState');
+
+        if (isMobile) {
+            // บนมือถือ: เริ่มต้นต้อง "หุบ" (collapsed) เสมอ เพื่อไม่ให้บังเนื้อหา
+            sidebar.classList.add('collapsed'); 
+        } else {
+            // บนคอม: เอาตามที่เคยจำไว้ (ถ้าจำว่าหุบ ก็หุบ)
+            if (savedState === 'collapsed') {
+                sidebar.classList.add('collapsed');
+            } else {
+                sidebar.classList.remove('collapsed');
+            }
+        }
+    }
+
+    // เรียกใช้ตอนเปิดเว็บ
+    initSidebar();
+
+    // เมื่อกดปุ่ม
+    toggleBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('collapsed');
+        
+        // บันทึกสถานะ (เฉพาะตอนใช้คอม มือถือไม่ต้องจำ เพราะควรปิดเสมอตอนเริ่ม)
+        if (window.innerWidth > 1024) {
+            if (sidebar.classList.contains('collapsed')) {
+                localStorage.setItem('sidebarState', 'collapsed');
+            } else {
+                localStorage.setItem('sidebarState', 'expanded');
+            }
+        }
+    });
+
+    </script>
+    </body>
+</html>
