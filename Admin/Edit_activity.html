@@ -113,20 +113,21 @@
             <div class="logo-area">
                 <i class="fas fa-bars" id="sidebarToggle"></i>
 
- <img src="../pbntc-logo.webp" alt="PBNTC Logo" class="logo">
+                <img src="../pbntc-logo.webp" alt="PBNTC Logo" class="logo">
                 PBNTC
             </div>
         </div>
 
         <div class="main-container">
-               <div class="sidebar" id="sidebar">
+            <div class="sidebar" id="sidebar">
                 <nav>
-                  <a href="Home.html"><i
+                    <a href="Home.html"><i
                             class="fas fa-home"></i> <span>หน้าหลัก</span></a>
                     <a href="Create_activity.html"><i class="fas fa-edit"></i>
                         <span>สร้างกิจกรรม</span></a>
-                    <a href="Activity_list.html"  class="active"><i
-                            class="fas fa-list-alt" class="active"></i> <span>รายการกิจกรรม</span></a>
+                    <a href="Activity_list.html" class="active"><i
+                            class="fas fa-list-alt" class="active"></i>
+                        <span>รายการกิจกรรม</span></a>
                     <a href="Overview_activity.html"><i
                             class="fas fa-clipboard-check"></i>
                         <span>ภาพรวมกิจกรรม</span></a>
@@ -134,7 +135,8 @@
                             class="fas fa-building"></i>
                         <span>รายชื่อนักศึกษา</span></a>
                     <a href="Term_results_summary.html"><i
-                            class="fas fa-poll"></i> <span>สรุปผลกิจกรรม</span></a>
+                            class="fas fa-poll"></i>
+                        <span>สรุปผลกิจกรรม</span></a>
                     <a href="../index.html" class="logout"><i
                             class="fas fa-sign-out-alt"></i>
                         <span>ลงชื่อเข้าใช้ออก</span></a>
@@ -158,7 +160,6 @@
                             style="margin: 0; font-size: 28px;">แก้ไขกิจกรรม</h2>
                     </div>
 
-                   
                 </div>
 
                 <form id="createActivityForm">
@@ -208,39 +209,47 @@
                         </div>
                     </div>
                     <div class="form-row">
-    <div class="form-group">
-        <label for="activityType" class="required">ประเภทกิจกรรม</label>
-        <select id="activityType" name="activityType" required>
-            <option value="activity">กิจกรรมทั่วไป (แผนก/วิทยาลัย)</option>
-            <option value="flag_ceremony">กิจกรรมหน้าเสาธง (เช็คชื่อเข้าแถว)</option>
-        </select>
-    </div>
-</div>
+                        <div class="form-group">
+                            <label for="activityType"
+                                class="required">ประเภทกิจกรรม</label>
+                            <select id="activityType" name="activityType"
+                                required>
+                                <option value>เลือกประเภทกิจกรรม</option>
+                                <option value="department">กิจกรรมแผนก</option>
+                                <option value="special">กิจกรรมพิเศษ</option>
+                            </select>
+                        </div>
+                    </div>
 
                     <div class="form-row">
                         <div class="form-group">
                             <label for="level">ระดับ</label>
                             <div class="input-icon-group">
-                                <select id="level" name="level" > <option value>เลือกระดับ</option>
+                                <select id="level" name="level"> <option
+                                        value>เลือกระดับ</option>
                                     <option value="ปวช.">ปวช.</option>
                                     <option value="ปวส.">ปวส.</option>
                                 </select>
-                                </div>
+                            </div>
                         </div>
 
                         <div class="form-group">
                             <label for="department">สาขา</label>
                             <div class="input-icon-group">
-                                <select id="department" name="department" > <option value>เลือกสาขา</option>
-                                    <option value="1">ไฟฟ้า</option>
-                                    <option value="2">ช่างยนต์</option>
+                                <select id="department" name="department">
+                                    <option value>เลือกสาขา</option>
+                                    <option value="1">เทคโนโลยีคอมพิวเตอร์
+                                        (ปวส.)</option>
+                                    <option value="2">เทคโนโลยีคอมพิวเตอร์
+                                        (ปวช.)</option>
                                 </select>
-                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="semester" class="required">ภาคเรียน</label>
+                            <label for="semester"
+                                class="required">ภาคเรียน</label>
                             <select id="semester" name="semester" required>
                                 <option value>เลือกภาคเรียน</option>
                                 <option value="1">ภาคเรียน 1</option>
@@ -249,8 +258,7 @@
                         </div>
                         <div class="form-group">
                             <label for="studentYear">ชั้นปี</label>
-                            <select id="studentYear" name="studentYear"
-                                >
+                            <select id="studentYear" name="studentYear">
                                 <option value>เลือกชั้นปี</option>
                             </select>
                         </div>
@@ -259,18 +267,6 @@
                             <select id="studentClass" name="studentClass">
                                 <option value>เลือกห้อง</option>
                             </select>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group"
-                            style="flex: unset; width: 300px; flex-direction: row; align-items: center;">
-                            <label for="recurringDays"
-                                style="width: 100px; font-weight: normal; margin-right: 10px;">จัดขึ้นทุกๆ</label>
-                            <input type="number" id="recurringDays"
-                                name="recurringDays" value="0"
-                                style="width: 80px;">
-                            <span
-                                style="font-weight: bold; margin-left: 10px;">วัน</span>
                         </div>
                     </div>
                     <div>
@@ -300,6 +296,11 @@
 
                 </form>
             </div>
+        </div>
+        <div id="loadingOverlay" class="loading-overlay">
+            <div class="spinner"></div>
+            <p style="margin-top: 15px; font-weight: bold;">กำลังบันทึกข้อมูล
+                กรุณารอสักครู่...</p>
         </div>
         <script>
       const toggleBtn = document.getElementById('sidebarToggle');
