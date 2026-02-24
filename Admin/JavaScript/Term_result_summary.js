@@ -7,10 +7,9 @@ let termScoreRows = [];
 
 async function fetchTermScore() {
     document.getElementById("score-body").innerHTML = `
-        <tr><td colspan="12" style="padding: 20px; color: #666;">กำลังดึงข้อมูล...</td></tr>
+        <tr><td colspan="6" style="padding: 20px; color: #666; text-align: center;">กำลังดึงข้อมูล...</td></tr>
     `;
 
-    // ดึงข้อมูลเหมือนเดิม
     const { data, error } = await supabaseClient
         .from('term_score')
         .select(`
@@ -32,10 +31,7 @@ async function fetchTermScore() {
                 ),
                 activity_check (
                     id,
-                    status,
-                    activity:activity_id ( 
-                        activity_type 
-                    )
+                    status
                 )
             )
         `);
@@ -43,46 +39,34 @@ async function fetchTermScore() {
     if (error) {
         console.error("ERROR >", error);
         document.getElementById("score-body").innerHTML = `
-            <tr><td colspan="12" style="color: red;">เกิดข้อผิดพลาด: ${error.message}</td></tr>
+            <tr><td colspan="6" style="color: red; text-align: center;">เกิดข้อผิดพลาด: ${error.message}</td></tr>
         `;
         return null;
     }
+    
+    // กรองข้อมูลซ้ำ
     const uniqueRowsMap = new Map();
     data.forEach(row => {
         const studentId = row.student?.id;
-
-        // ใช้ Student ID เป็นคีย์เท่านั้น
         if (studentId && !uniqueRowsMap.has(studentId)) {
             uniqueRowsMap.set(studentId, row);
         }
     });
     const uniqueData = Array.from(uniqueRowsMap.values());
-    // 🔥🔥 สิ้นสุดโค้ดกรองข้อมูลซ้ำ 🔥🔥
 
-    // 3. ประมวลผลข้อมูล
+    // 3. ประมวลผลข้อมูลใหม่: นับรวมเข้าด้วยกัน
     termScoreRows = uniqueData.map(row => {
         const student = row.student;
         const classInfo = student?.class;
         const major = classInfo?.major;
         const checks = student?.activity_check || [];
 
-        // 1. นับจำนวน (Counts)
-        const flagList = checks.filter(c => c.activity?.activity_type === 'flag_ceremony');
-        const flagTotal = flagList.length;
-        const flagAttended = flagList.filter(c => c.status === 'Attended').length;
+        // 1. นับจำนวนทั้งหมด และ ที่เข้า (Attended)
+        const totalRequired = checks.length;
+        const totalAttended = checks.filter(c => c.status === 'Attended').length;
 
-        const deptList = checks.filter(c => c.activity?.activity_type === 'activity');
-        const deptTotal = deptList.length;
-        const deptAttended = deptList.filter(c => c.status === 'Attended').length;
-
-        // 2. 🔥 คำนวณเปอร์เซ็นต์เองใน JS (เพื่อให้เป็นปัจจุบันที่สุด)
-        // สูตร: (จำนวนที่มา / จำนวนทั้งหมด) * 100
-        const calcFlagPercent = flagTotal > 0 ? (flagAttended / flagTotal) * 100 : 0;
-        const calcDeptPercent = deptTotal > 0 ? (deptAttended / deptTotal) * 100 : 0;
-
-        // 3. 🔥 คำนวณผลการผ่านเอง (เกณฑ์ 80%)
-        // ต้องผ่านทั้ง หน้าเสาธง(80%) และ กิจกรรม(80%)
-        const isPassedCalc = (calcFlagPercent >= 80) && (calcDeptPercent >= 80);
+        // 2. คำนวณเปอร์เซ็นต์
+        const calcPercent = totalRequired > 0 ? (totalAttended / totalRequired) * 100 : 0;
 
         return {
             id: row.id,
@@ -93,17 +77,11 @@ async function fetchTermScore() {
             year: classInfo?.year ?? "-",
             classNumber: classInfo?.class_number ?? "-",
 
-            // ข้อความแสดงจำนวนครั้ง
-            flagText: `${flagAttended}/${flagTotal}`,
-            deptText: `${deptAttended}/${deptTotal}`,
-
-            flagAttended, flagTotal,
-            deptAttended, deptTotal,
-
-            // ✅ ใช้ค่าที่คำนวณใหม่แทนค่าจาก DB
-            percentFlag: parseFloat(calcFlagPercent.toFixed(2)),
-            percentActivity: parseFloat(calcDeptPercent.toFixed(2)),
-            isPassed: isPassedCalc
+            // ข้อมูลสำหรับแสดงผล
+            totalRequired,
+            totalAttended,
+            summaryText: `${totalAttended}/${totalRequired}`,
+            percentTotal: parseFloat(calcPercent.toFixed(2))
         };
     });
 
@@ -111,8 +89,7 @@ async function fetchTermScore() {
     renderFilteredTable();
 }
 
-/* ... (ส่วน Filter คงเดิม ไม่ต้องแก้) ... */
-
+/* --- ส่วน Filter คงเดิม --- */
 function initFilters() {
     const uniqueLevels = [...new Set(termScoreRows.map(r => r.level))].filter(l => l !== "-").sort();
     fillSelect("level", uniqueLevels, "ทุกระดับ");
@@ -179,22 +156,16 @@ function getFilteredRows() {
 }
 
 /* ====== RENDER TABLE & POPUP ====== */
-
 function renderFilteredTable() {
     const filtered = getFilteredRows();
     const tbody = document.getElementById("score-body");
 
     if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 20px; color: #999;">ไม่พบข้อมูลตามเงื่อนไข</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 20px; color: #999;">ไม่พบข้อมูลตามเงื่อนไข</td></tr>`;
         return;
     }
 
     tbody.innerHTML = filtered.map(row => {
-        // ใช้ row.isPassed ที่เราคำนวณใหม่
-        const passBadge = row.isPassed
-            ? '<span class="status-badge status-pass">ผ่าน</span>'
-            : '<span class="status-badge status-fail">ไม่ผ่าน</span>';
-
         return `
         <tr style="cursor: pointer;" onclick="openStudentModal('${row.id}')">
             <td>${row.student_id}</td>
@@ -204,57 +175,26 @@ function renderFilteredTable() {
             <td>${row.classNumber}</td>
             
             <td style="text-align:center;">
-                <div style="font-weight:bold; font-size:1.1em;">${row.flagText}</div>
-                <div style="font-size:0.85em; color:#666;">(${row.percentFlag}%)</div>
+                <div style="font-weight:bold; font-size:1.1em;">${row.summaryText}</div>
+                <div style="font-size:0.85em; color:#666;">(${row.percentTotal}%)</div>
             </td>     
-            
-            <td style="text-align:center;">
-                <div style="font-weight:bold; font-size:1.1em;">${row.deptText}</div>
-                <div style="font-size:0.85em; color:#666;">(${row.percentActivity}%)</div>
-            </td> 
-
-            <td>${passBadge}</td>
         </tr>
         `;
     }).join("");
 }
 
-// 🔥 ฟังก์ชันเปิด Popup
+// 🔥 ฟังก์ชันเปิด Popup การ์ดใบเดียว
 function openStudentModal(rowId) {
     const row = termScoreRows.find(r => r.id.toString() === rowId.toString());
     if (!row) return;
 
+    // เปลี่ยนชื่อบนหัว Modal
     document.getElementById('modalStudentName').textContent = row.studentName;
 
-    // --- การ์ดซ้าย: หน้าเสาธง ---
-    document.getElementById('flagTotal').textContent = `${row.flagTotal} ครั้ง`;
-    document.getElementById('flagAttended').textContent = `${row.flagAttended} ครั้ง`;
-    document.getElementById('flagPercent').textContent = `${row.percentFlag}%`;
-
-    const flagIcon = document.getElementById('flagIcon');
-    const flagCard = document.getElementById('flagCard');
-    if (row.percentFlag >= 80) {
-        flagIcon.className = "fas fa-check";
-        flagCard.className = "card-detail card-blue";
-    } else {
-        flagIcon.className = "fas fa-times";
-        flagCard.className = "card-detail card-red";
-    }
-
-    // --- การ์ดขวา: กิจกรรม ---
-    document.getElementById('deptTotal').textContent = `${row.deptTotal} ครั้ง`;
-    document.getElementById('deptAttended').textContent = `${row.deptAttended} ครั้ง`;
-    document.getElementById('deptPercent').textContent = `${row.percentActivity}%`;
-
-    const deptIcon = document.getElementById('deptIcon');
-    const deptCard = document.getElementById('deptCard');
-    if (row.percentActivity >= 80) {
-        deptIcon.className = "fas fa-check";
-        deptCard.className = "card-detail card-blue";
-    } else {
-        deptIcon.className = "fas fa-times";
-        deptCard.className = "card-detail card-red";
-    }
+    // ยัดข้อมูลใส่การ์ด
+    document.getElementById('totalRequired').textContent = row.totalRequired;
+    document.getElementById('totalAttended').textContent = row.totalAttended;
+    document.getElementById('totalPercent').textContent = row.percentTotal;
 
     document.getElementById('studentModal').style.display = 'flex';
 }
