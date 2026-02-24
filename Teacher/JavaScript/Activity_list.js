@@ -142,6 +142,7 @@ async function fetchActivities() {
     const container = document.getElementById('activityCardContainer');
     container.innerHTML = 'กำลังโหลดกิจกรรม...';
 
+    // ดึง major_id โดยตรงจากตาราง activity
     const { data: activities, error } = await supabaseClient
         .from('activity')
         .select(`
@@ -149,12 +150,11 @@ async function fetchActivities() {
             name,
             start_time,
             end_time,
-            is_recurring,
+            major_id,
             class:class_id (
                 id,
                 class_number,
-                year,
-                major:major_id (id, name, level)
+                year
             )
         `)
         .order('start_time', { ascending: true });
@@ -192,27 +192,23 @@ function RenderActivityCards(activities, container) {
         }).replace(/\//g, '/');
         
         const startTime = new Date(activity.start_time).toLocaleTimeString('th-TH', { 
-            hour: '2-digit', 
-            minute: '2-digit', 
-            timeZone: 'Asia/Bangkok' 
+            hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' 
         });
         
         const endTime = new Date(activity.end_time).toLocaleTimeString('th-TH', { 
-            hour: '2-digit', 
-            minute: '2-digit', 
-            timeZone: 'Asia/Bangkok' 
+            hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' 
         });
         
-        const classData = activity.class;
-        const majorData = classData?.major;
+        // 💡 ค้นหาสาขาและระดับจาก major_id โดยตรง
+        const majorData = allMajors.find(m => m.id == activity.major_id);
+        const departmentName = majorData ? majorData.name : DEFAULT_MAJOR;
+        const departmentLevel = majorData ? majorData.level : DEFAULT_LEVEL;
 
-        const departmentName = majorData?.name || DEFAULT_MAJOR;
-        const departmentLevel = majorData?.level || DEFAULT_LEVEL;
+        const classData = activity.class;
         const classYear = classData?.year || DEFAULT_YEAR;
         const classNumber = classData?.class_number || DEFAULT_CLASS_NUM;
         
-        const mockSemester = (activity.id % 2) + 1;
-        const recurringDays = activity.is_recurring ? 'N' : '0';
+        // ลบ mockSemester และ recurringDays ออกไปเลยเพื่อความสะอาด
 
         const cardHTML = `
             <div class="activity-card" 
@@ -231,17 +227,14 @@ function RenderActivityCards(activities, container) {
                 <div class="card-detail">สาขา: ${departmentName}</div>
                 <div class="card-detail">ระดับ: ${departmentLevel}</div>
                 <div class="card-detail">ชั้นปี: ปี ${classYear} ห้อง ${classNumber}</div>
-                <div class="card-detail">จัดขึ้นทุก ${recurringDays} วัน</div>
-                <div class="card-detail">เทอม: ${mockSemester}</div>
                 
                 <div class="card-actions">
-                    <i class="fas fa-edit edit-btn" title="แก้ไข"></i>
+                    <i class="fas fa-edit edit-btn" title="แก้ไข" href="Edit_activity.html"></i>
                     <i class="fas fa-trash-alt delete-btn" title="ลบ"></i>
                 </div>
             </div>
         `;
         container.innerHTML += cardHTML;
-        
     });
 
     attachCardEventListeners();
@@ -285,34 +278,23 @@ function filterActivities(activities) {
 
         const activityName = activity.name.toLowerCase();
         
-        // 1. ตรวจสอบสถานะการมี Class/Major Data
-        const hasValidClassData = !!activity.class;
-
-        // 2. ดึงค่าจาก Data Attributes
+        // ดึงค่าจาก Data Attributes ของการ์ด
         const activityLevel = card.dataset.level || '';
         const activityDeptName = card.dataset.deptName || '';
         const activityYear = card.dataset.year || '';
         const activityClassNum = card.dataset.classnum || '';
 
-        // 3. Logic การกรอง
+        // Logic การกรองแบบใหม่ ตรวจสอบตรงไปตรงมา
         const matchName = activityName.includes(keyword);
+        const matchLevel = selectedLevel === '' || activityLevel === selectedLevel;
+        const matchDept = selectedDept === '' || activityDeptName === selectedDept;
+        const matchYear = selectedYear === '' || activityYear === selectedYear;
+        const matchClassNum = selectedClassNum === '' || activityClassNum === selectedClassNum;
 
-        let isMatch = false;
+        const isMatch = matchName && matchLevel && matchDept && matchYear && matchClassNum;
 
-        if (!hasValidClassData) {
-            // กิจกรรมที่ไม่มี Class ID/Major (NULL ใน DB) - Match กับทุกตัวกรอง
-            isMatch = matchName;
-        } else {
-            // กิจกรรมที่มี Class ID/Major - ใช้ Logic การกรองปกติ
-            const matchLevel = selectedLevel === '' || selectedLevel === activityLevel;
-            const matchDept = selectedDept === '' || selectedDept === activityDeptName;
-            const matchYear = selectedYear === '' || selectedYear === activityYear;
-            const matchClassNum = selectedClassNum === '' || selectedClassNum === activityClassNum;
-
-            isMatch = matchName && matchLevel && matchDept && matchYear && matchClassNum;
-        }
-
-        card.style.display = isMatch ? 'block' : 'none';
+        // ถ้าตรงเงื่อนไขให้แสดง (ปล่อยว่างคือกลับไปใช้ CSS เริ่มต้นของมัน)
+        card.style.display = isMatch ? '' : 'none';
 
         if (isMatch) visibleCount++;
     });
@@ -320,7 +302,7 @@ function filterActivities(activities) {
     // แสดง/ซ่อนข้อความ "ไม่พบกิจกรรม"
     const noResults = document.getElementById('no-results');
     if (visibleCount === 0 && !noResults) {
-        container.innerHTML += '<p id="no-results" style="text-align: center; width: 100%;">ไม่พบกิจกรรมตามเงื่อนไขที่เลือก</p>';
+        container.innerHTML += '<p id="no-results" style="text-align: center; width: 100%; margin-top: 20px;">ไม่พบกิจกรรมตามเงื่อนไขที่เลือก</p>';
     } else if (visibleCount > 0 && noResults) {
         noResults.remove();
     }
